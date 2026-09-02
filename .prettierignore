@@ -1,0 +1,19 @@
+# Ignore git hooks
+**/.husky/**
+
+# Ignore lock files and configuration files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Ignore public/static assets and coverage files
+**/public/**
+**/static/**
+**/coverage/**
+
+# Ignore UI components or generated files (like shadcn components)
+**/components/ui/**
+
+# Ignore Documentation files
+README.md
+CHANGELOG.md

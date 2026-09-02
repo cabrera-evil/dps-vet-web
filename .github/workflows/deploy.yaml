@@ -1,0 +1,60 @@
+name: Deploy to Vercel
+description: |
+  This workflow deploys the application to Vercel and notifies the status on Discord.
+  It is triggered on push events to the master and develop branches.
+
+on:
+  push:
+    branches:
+      - master
+      - develop
+  workflow_dispatch:
+
+permissions:
+  security-events: write
+  actions: read
+  contents: read
+
+jobs:
+  set_environment:
+    name: Set
+    uses: cabrera-evil/workflows/.github/workflows/set-environment.yaml@master
+    with:
+      ref: ${{ github.ref }}
+    secrets: inherit
+
+  analyze_code:
+    name: Analyze
+    needs: [set_environment]
+    uses: cabrera-evil/workflows/.github/workflows/code-analysis.yaml@master
+    with:
+      default_branch: ${{ github.event.repository.default_branch }}
+      push_before_sha: ${{ github.event.before }}
+      push_base_sha: ${{ github.event.base_ref }}
+      pull_base_sha: ${{ github.event.pull_request.base.sha }}
+    secrets: inherit
+
+  analyze_deps:
+    name: Analyze
+    needs: [set_environment]
+    uses: cabrera-evil/workflows/.github/workflows/deps-analysis.yaml@master
+    secrets: inherit
+
+  deploy:
+    name: Deploy
+    needs: [set_environment, analyze_code, analyze_deps]
+    uses: cabrera-evil/workflows/.github/workflows/deploy-vercel.yaml@master
+    with:
+      environment: ${{ needs.set_environment.outputs.environment }}
+    secrets: inherit
+
+  notify:
+    name: Notify
+    needs: [set_environment, deploy]
+    if: always()
+    uses: cabrera-evil/workflows/.github/workflows/notify-status-discord.yaml@master
+    with:
+      environment: ${{ needs.set_environment.outputs.environment }}
+      short_sha: ${{ needs.set_environment.outputs.short_sha }}
+      status: ${{ needs.deploy.outputs.status || 'skipped' }}
+    secrets: inherit
