@@ -21,6 +21,9 @@ export class RestService {
 	private failedQueue: QueueItem[] = [];
 
 	private constructor() {
+		// TODO(self-hosted-api): once the backend fully lives in `app/api/**`,
+		// point baseURL at this app's own `/api` (relative in the browser,
+		// absolute origin on the server) and drop NEXT_PUBLIC_API_URL/PROXY/HOST.
 		this.axiosInstance = axios.create({
 			baseURL: process.env.NEXT_PUBLIC_PROXY
 				? `${process.env.NEXT_PUBLIC_HOST}/api`
