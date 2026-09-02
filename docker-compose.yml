@@ -1,18 +1,18 @@
 services:
   frontend:
-    image: cabreraevil/nextjs-template:latest
+    image: cabreraevil/dps-vet-web:latest
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: nextjs-template
+    container_name: dps-vet-web
     restart: unless-stopped
     ports:
       - '${PORT:-3000}:3000'
     env_file:
       - .env
     networks:
-      - template_net
+      - dps_vet_web_net
 
 networks:
-  template_net:
-    name: template_net
+  dps_vet_web_net:
+    name: dps_vet_web_net
