@@ -1,7 +1,7 @@
 'use client';
 
-import { Role } from '@/constants/enum';
-import { hasRequiredRole } from '@/utils/role';
+import { Permission } from '@/constants/permission';
+import { hasPermission } from '@/utils/permission';
 import { useSession } from 'next-auth/react';
 import { ReactNode } from 'react';
 
@@ -11,8 +11,9 @@ interface BaseAuthWrapperProps {
 	loading?: ReactNode;
 }
 
-interface RoleAuthWrapperProps extends BaseAuthWrapperProps {
-	roles: Role[];
+interface PermissionAuthWrapperProps extends BaseAuthWrapperProps {
+	permissions: Permission[];
+	mode?: 'any' | 'all';
 }
 
 // Main auth wrapper that handles both authentication and authorization
@@ -27,32 +28,36 @@ export function AuthWrapper({
 	return children;
 }
 
-// Role-based authorization wrapper (requires authentication first)
-export function RoleWrapper({
-	roles,
+// Permission-based authorization wrapper (requires authentication first)
+export function PermissionWrapper({
+	permissions,
+	mode = 'any',
 	children,
 	fallback,
 	loading,
-}: RoleAuthWrapperProps) {
+}: PermissionAuthWrapperProps) {
 	const { data: session, status } = useSession();
 	if (status === 'loading') return loading;
 	if (status !== 'authenticated') return fallback;
-	if (!hasRequiredRole(session?.user?.role, roles)) return fallback;
+	if (!hasPermission(session?.user?.permissions, permissions, mode))
+		return fallback;
 	return children;
 }
 
-// Combined wrapper for authenticated + role check
-export function AuthRoleWrapper({
-	roles,
+// Combined wrapper for authenticated + permission check
+export function AuthPermissionWrapper({
+	permissions,
+	mode = 'any',
 	children,
 	fallback,
 	loading,
-}: RoleAuthWrapperProps) {
+}: PermissionAuthWrapperProps) {
 	const { data: session, status } = useSession();
 	if (status === 'loading') return loading;
 	// Check authentication first
 	if (status !== 'authenticated') return fallback;
 	// Then check authorization
-	if (!hasRequiredRole(session?.user?.role, roles)) return fallback;
+	if (!hasPermission(session?.user?.permissions, permissions, mode))
+		return fallback;
 	return children;
 }

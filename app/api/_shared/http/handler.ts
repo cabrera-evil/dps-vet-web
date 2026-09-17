@@ -1,7 +1,9 @@
+import { verifyFirebaseIdToken } from '@/app/api/_shared/firebase/verify-id-token';
 import { auth } from '@/auth';
-import { Role } from '@/constants/enum';
-import { hasRequiredRole } from '@/utils/role';
+import { Permission } from '@/constants/permission';
+import { hasPermission } from '@/utils/permission';
 import createHttpError from 'http-errors';
+import type { NextRequest } from 'next/server';
 import type { RouteHandler } from './http.types';
 import { failure } from './response';
 
@@ -19,19 +21,49 @@ export function withRoute(handler: RouteHandler): RouteHandler {
 	};
 }
 
+interface ResolvedIdentity {
+	uid: string;
+	permissions: Permission[];
+}
+
 /**
- * Requires an authenticated session, and optionally one of `roles` (using the
- * `hasRequiredRole` hierarchy). Reads the session via next-auth's `auth()`.
+ * Resolves the caller's identity from either the NextAuth session cookie
+ * (web) or an `Authorization: Bearer <firebaseIdToken>` header (future
+ * mobile app), producing the same `{ uid, permissions }` shape regardless of
+ * which path authenticated the caller.
  */
-export function withAuth(handler: RouteHandler, roles?: Role[]): RouteHandler {
+async function resolveIdentity(
+	request: NextRequest
+): Promise<ResolvedIdentity | null> {
+	const authorizationHeader = request.headers.get('authorization');
+	if (authorizationHeader?.startsWith('Bearer ')) {
+		const idToken = authorizationHeader.slice('Bearer '.length).trim();
+		if (!idToken) return null;
+		const identity = await verifyFirebaseIdToken(idToken);
+		return { uid: identity.uid, permissions: identity.permissions };
+	}
+	const session = await auth();
+	if (!session?.user) return null;
+	return { uid: session.user.uid, permissions: session.user.permissions };
+}
+
+/**
+ * Requires an authenticated identity, and optionally one of `permissions`
+ * (set-membership via `hasPermission`).
+ */
+export function withAuth(
+	handler: RouteHandler,
+	permissions?: Permission[],
+	mode: 'any' | 'all' = 'any'
+): RouteHandler {
 	return async (request, context) => {
-		const session = await auth();
-		if (!session?.user) throw new createHttpError.Unauthorized();
-		if (roles?.length) {
-			const role = session.user.role;
-			if (!role || !hasRequiredRole(role, roles))
-				throw new createHttpError.Forbidden();
-		}
+		const identity = await resolveIdentity(request);
+		if (!identity) throw new createHttpError.Unauthorized();
+		if (
+			permissions?.length &&
+			!hasPermission(identity.permissions, permissions, mode)
+		)
+			throw new createHttpError.Forbidden();
 		return handler(request, context);
 	};
 }

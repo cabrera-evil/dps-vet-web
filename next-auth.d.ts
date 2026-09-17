@@ -1,5 +1,5 @@
 import { DefaultSession } from 'next-auth';
-import { Role } from './constants/enum';
+import { Permission } from './constants/permission';
 
 declare module 'next-auth' {
 	interface Session {
@@ -7,10 +7,14 @@ declare module 'next-auth' {
 	}
 
 	interface User {
-		role: Role;
+		uid: string;
+		permissions: Permission[];
 	}
+}
 
+declare module 'next-auth/jwt' {
 	interface JWT {
-		accessToken?: string;
+		uid?: string;
+		permissions?: Permission[];
 	}
 }

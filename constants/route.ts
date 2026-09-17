@@ -1,12 +1,12 @@
-import { Role } from './enum';
+import { Permission } from './permission';
 
 // Public routes (redirect authenticated users away)
 export const authRoutes = ['/auth/*'];
 
-// Role-based protected routes
+// Permission-based protected routes
 export const protectedRoutes = [
 	{
 		path: '/admin/*',
-		allowedRoles: [Role.ADMIN, Role.SUPER_ADMIN],
+		requiredPermissions: [Permission.CONTACTS_READ],
 	},
 ];
