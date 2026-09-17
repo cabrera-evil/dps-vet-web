@@ -20,6 +20,7 @@ export const ROLE_CATALOG: RoleCatalogEntry[] = [
 			Permission.CONTACTS_READ,
 			Permission.CONTACTS_UPDATE,
 			Permission.CONTACTS_DELETE,
+			Permission.USERS_READ,
 		],
 	},
 	{
@@ -28,6 +29,8 @@ export const ROLE_CATALOG: RoleCatalogEntry[] = [
 			Permission.CONTACTS_READ,
 			Permission.CONTACTS_UPDATE,
 			Permission.CONTACTS_DELETE,
+			Permission.USERS_READ,
+			Permission.USERS_UPDATE,
 		],
 	},
 ];

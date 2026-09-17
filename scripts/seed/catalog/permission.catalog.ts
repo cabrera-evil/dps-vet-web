@@ -24,4 +24,12 @@ export const PERMISSION_CATALOG: PermissionCatalogEntry[] = [
 		code: Permission.CONTACTS_DELETE,
 		description: 'Delete a contact message',
 	},
+	{
+		code: Permission.USERS_READ,
+		description: 'View user profiles',
+	},
+	{
+		code: Permission.USERS_UPDATE,
+		description: "Change a user's role",
+	},
 ];
