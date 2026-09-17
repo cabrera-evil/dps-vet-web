@@ -15,7 +15,7 @@ Every module below is built as a vertical slice following the **exact structure 
 
 ## ✅ Progress Checklist
 
-- [ ] **Phase 0** — Secrets & environment hygiene (blocked on the untracked service-account key below)
+- [~] **Phase 0** — Secrets & environment hygiene — mostly done (2026-09-16): `.env` populated and build verified; JSON key file deletion and Firestore Security Rules check still open (see Phase 0 below)
 - [x] **Phase 1** — Firebase Authentication swap (`auth.ts`, `withAuth` bearer-token path) — implemented 2026-09-16, but as a **permissions-only** model instead of the `Role` rename originally described below (see the implementation note under Phase 1)
 - [ ] **Phase 2** — Firestore schema design + `usuarios`/roles administration
 - [ ] **Phase 3** — `mascotas` module
@@ -26,14 +26,15 @@ Every module below is built as a vertical slice following the **exact structure 
 - [ ] **Phase 8** — `reportes` module
 - [ ] **Phase 9** — Retire the legacy REST backend path
 
-## ⚠ Blocking issue — do before anything else
+## ⚠ Blocking issue — partially resolved (2026-09-16)
 
-`config/udb-dps-project-firebase-adminsdk-fbsvc-eb2f3908cf.json` is a raw Firebase Admin **service-account private key** sitting untracked in the working tree. `app/api/_shared/firebase/config.ts` already reads the same credentials from env vars (`FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`, `FIREBASE_STORAGE_BUCKET`, `FIREBASE_DATABASE_URL` — see `env.d.ts`), so this file is redundant and must never be committed.
+`config/firebase.json` (previously `config/udb-dps-project-firebase-adminsdk-fbsvc-eb2f3908cf.json`) is a raw Firebase Admin **service-account private key** sitting untracked in the working tree. `app/api/_shared/firebase/config.ts` already reads the same credentials from env vars (`FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`, `FIREBASE_STORAGE_BUCKET`, `FIREBASE_DATABASE_URL` — see `env.d.ts`), so this file is redundant and must never be committed.
 
-- Copy its `project_id` / `client_email` / `private_key` values into `.env` (escaping newlines as `\n`, per the `.replace(/\\n/g, '\n')` in `config.ts`) and into Vercel's env settings.
-- Delete the JSON file from the working tree once copied.
-- Confirm `.gitignore` covers `config/*.json` (or the whole `config/` dir if nothing else non-secret lives there) so this can't recur.
-- I have not deleted or moved it — needs your confirmation before any `git add`.
+- [x] `project_id` / `client_email` / `private_key` copied into `.env` (escaped newlines, per the `.replace(/\\n/g, '\n')` in `config.ts`) — `pnpm build` verified working from `.env` alone.
+- [ ] Copy the same values into Vercel's env settings (not done here — needs deploy access).
+- [x] `.gitignore` broadened to `config/*.json` (was only `config/firebase.json`) so a renamed/future key file can't recur.
+- [ ] **Delete `config/firebase.json` from the working tree** — the user explicitly chose to leave it in place for now (asked 2026-09-16); revisit before this branch merges or deploys.
+- [ ] `FIREBASE_STORAGE_BUCKET` / `FIREBASE_DATABASE_URL` in `.env` are still placeholder values — the service-account key doesn't carry them; confirm the real values in the Firebase console before Phase 6 (Storage) or any Realtime Database usage.
 
 ## Current state (verified 2026-09-16)
 
@@ -54,12 +55,12 @@ Every module below is built as a vertical slice following the **exact structure 
 
 ---
 
-## Phase 0 — Secrets & environment hygiene
+## Phase 0 — Secrets & environment hygiene — 🟡 Mostly done (2026-09-16)
 
-- Resolve the blocking issue above.
-- Cross-check `.env.example` lists every key in `env.d.ts`'s `FIREBASE_*` block plus `AUTH_SECRET`/`AUTH_DEBUG`.
-- Confirm Firestore Security Rules (console-side, not this repo) deny all direct client access — the proposal's architecture requires **all** reads/writes to go through this backend, never a client SDK talking to Firestore directly.
-- Acceptance: `pnpm build` succeeds locally with only `.env` (no JSON key file present).
+- [x] Resolve the blocking issue above — partially: `.env` is populated and `pnpm build` passes; the raw JSON key file itself is intentionally still present (user's call, revisit before merge/deploy) and Vercel's env settings haven't been touched from here.
+- [x] Cross-check `.env.example` lists every key in `env.d.ts`'s `FIREBASE_*` block plus `AUTH_SECRET`/`AUTH_DEBUG` — verified, `.env.example` already lists every `env.d.ts` key (including the Sentry/Google Analytics ones); no changes needed.
+- [ ] Confirm Firestore Security Rules (console-side, not this repo) deny all direct client access — **not verifiable from this repo**: no `firestore.rules`/`.firebaserc` exists here, so this is a manual check the user must do directly in the Firebase console.
+- [x] Acceptance (partial): `pnpm build` succeeds locally with `.env` populated. The literal "no JSON key file present" clause is still open pending the deletion above.
 
 ## Phase 1 — Firebase Authentication swap (`auth.ts`, unblocks every protected module) — ✅ Done (2026-09-16)
 

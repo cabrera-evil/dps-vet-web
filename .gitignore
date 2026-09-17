@@ -52,5 +52,5 @@ secrets.yaml
 # Course Docs
 docs/course/**
 
-# Firebase Config
-config/firebase.json
+# Firebase Config (service-account keys, etc.)
+config/*.json
