@@ -13,6 +13,19 @@ Every module below is built as a vertical slice following the **exact structure 
 | 2026-11-08    | React Native app adds Firebase Auth + Firestore           | REST contract from Phases 0–2 must be stable — mobile will call these same endpoints                            |
 | 2026-11-22    | Final delivery                                            | All phases below shipped                                                                                        |
 
+## ✅ Progress Checklist
+
+- [ ] **Phase 0** — Secrets & environment hygiene (blocked on the untracked service-account key below)
+- [x] **Phase 1** — Firebase Authentication swap (`auth.ts`, `withAuth` bearer-token path) — implemented 2026-09-16, but as a **permissions-only** model instead of the `Role` rename originally described below (see the implementation note under Phase 1)
+- [ ] **Phase 2** — Firestore schema design + `usuarios`/roles administration
+- [ ] **Phase 3** — `mascotas` module
+- [ ] **Phase 4** — `servicios` module
+- [ ] **Phase 5** — `citas` module
+- [ ] **Phase 6** — `historiales` module + Storage
+- [ ] **Phase 7** — `medicamentos` + `pedidos` modules
+- [ ] **Phase 8** — `reportes` module
+- [ ] **Phase 9** — Retire the legacy REST backend path
+
 ## ⚠ Blocking issue — do before anything else
 
 `config/udb-dps-project-firebase-adminsdk-fbsvc-eb2f3908cf.json` is a raw Firebase Admin **service-account private key** sitting untracked in the working tree. `app/api/_shared/firebase/config.ts` already reads the same credentials from env vars (`FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`, `FIREBASE_STORAGE_BUCKET`, `FIREBASE_DATABASE_URL` — see `env.d.ts`), so this file is redundant and must never be committed.
@@ -32,9 +45,12 @@ Every module below is built as a vertical slice following the **exact structure 
 | `app/api/_shared/errors/*` (`firebase-error.ts`, `firebase-status-map.ts`, `error-response.ts`)                                       | Done — Firebase error → HTTP status mapping                                                                                                                                                                                                                                        |
 | `app/api/contacts/*`                                                                                                                  | Done — full template slice (public create, admin list/update/remove)                                                                                                                                                                                                               |
 | `app/api/protected/route.ts`                                                                                                          | Exists — sanity-check route for `withAuth`, not a real module                                                                                                                                                                                                                      |
-| `auth.ts`                                                                                                                             | **Not migrated** — `CredentialsProvider` still POSTs to a legacy `auth/login` REST backend (`lib/rest.ts` `create()`); this predates the Firebase Admin `Auth` handle that already exists in `admin.service.ts` and is unused                                                      |
-| `proxy.ts`                                                                                                                            | Working (role-gating via `next-auth` JWT), marked deprecated per the `chore: deprecation notice for proxy handler` commit — clarify with the team whether "deprecated" means replace with `next.config.mjs` rewrites/new route matching, or just a naming note, before touching it |
-| Firestore collections (`usuarios`, `mascotas`, `servicios`, `medicamentos`, `citas`, `historiales`, `horarios`)                       | None exist yet beyond `contacts`                                                                                                                                                                                                                                                   |
+| `auth.ts`                                                                                                                             | **Done (2026-09-16)** — `CredentialsProvider` now takes a Firebase `idToken` and calls `verifyFirebaseIdToken` (`app/api/_shared/firebase/verify-id-token.ts`); legacy `auth/login` REST call and manual `jwt`/`refreshToken` cookies removed                                       |
+| `app/api/_shared/http/handler.ts`'s `withAuth`                                                                                        | **Done (2026-09-16)** — resolves identity from either the NextAuth session cookie or an `Authorization: Bearer <idToken>` header, both producing `{ uid, permissions }`; gates on `Permission[]`, not roles                                                                        |
+| `constants/permission.ts`, `utils/permission.ts`                                                                                     | **Done (2026-09-16)** — atomic `Permission` enum + `hasPermission` set-membership check, replacing the `Role`/`hasRequiredRole` hierarchy entirely (`constants/enum.ts`'s `Role` enum and `utils/role.ts` were deleted, not renamed — see Phase 1 note below)                       |
+| `scripts/seed/*`                                                                                                                      | **Done (2026-09-16)** — Prisma-seed-style catalog seeding (`pnpm db:seed`) for Firestore's `permissions`/`roles` collections; not yet executed against a real Firebase project                                                                                                     |
+| `proxy.ts`                                                                                                                            | Working (now permission-gating via `next-auth` JWT's `token.permissions`, not role hierarchy), marked deprecated per the `chore: deprecation notice for proxy handler` commit — clarify with the team whether "deprecated" means replace with `next.config.mjs` rewrites/new route matching, or just a naming note, before touching it |
+| Firestore collections (`usuarios`, `mascotas`, `servicios`, `medicamentos`, `citas`, `historiales`, `horarios`)                       | None exist yet beyond `contacts` — and per the repo's language convention, name these in English (`users`, `pets`, `services`, `medications`, `appointments`, `medical-records`, `schedules`) rather than the Spanish names used in this doc                                       |
 
 ---
 
@@ -45,7 +61,11 @@ Every module below is built as a vertical slice following the **exact structure 
 - Confirm Firestore Security Rules (console-side, not this repo) deny all direct client access — the proposal's architecture requires **all** reads/writes to go through this backend, never a client SDK talking to Firestore directly.
 - Acceptance: `pnpm build` succeeds locally with only `.env` (no JSON key file present).
 
-## Phase 1 — Firebase Authentication swap (`auth.ts`, unblocks every protected module)
+## Phase 1 — Firebase Authentication swap (`auth.ts`, unblocks every protected module) — ✅ Done (2026-09-16)
+
+> **Implementation note (supersedes the paragraph below):** rather than renaming `Role.USER|ADMIN|SUPER_ADMIN` to `Role.CLIENTE|EMPLEADO|ADMINISTRADOR`, the `Role` enum and `utils/role.ts`'s hierarchy were **removed entirely**. Authorization is now permissions-only: `constants/permission.ts`'s `Permission` enum (atomic `resource:action` constants) plus `utils/permission.ts`'s `hasPermission` set-membership check, mirroring `constants/route.ts`'s `requiredPermissions`, `app/api/_shared/http/handler.ts`'s `withAuth`, and `components/wrappers/next-auth-wrapper.tsx`'s `PermissionWrapper`/`AuthPermissionWrapper` (the old `RoleWrapper`/`AuthRoleWrapper`). A "role" (Cliente/Empleado/Administrador) is not a stored enum anywhere in app code — it's just a name for a group of permissions, administered in Firestore's `roles` collection and seeded via `scripts/seed/` (see `AGENTS.md`'s "Database Seeding" section). `docs/roadmap/frontend.md`'s references to `Role`/`RoleWrapper`/`allowedRoles` need the same update wherever those pages get built.
+>
+> The rest of this section (Firebase ID token verification, custom claims, bearer-token path) was implemented as described, substituting `permissions: Permission[]` wherever `role` is mentioned.
 
 `constants/enum.ts` currently defines `Role.USER | Role.ADMIN | Role.SUPER_ADMIN` (template scaffold values) and `constants/route.ts`'s `protectedRoutes` / `utils/role.ts`'s `hasRequiredRole` hierarchy are built on them. The proposal defines four roles instead: **Visitante** (unauthenticated, not a stored role), **Cliente**, **Empleado**, **Administrador**. Rename/extend the enum to `Role.CLIENTE | Role.EMPLEADO | Role.ADMINISTRADOR` (or keep both if something else in the scaffold still depends on the old names — check `utils/role.ts`'s hierarchy order first, since it assumes `USER < ADMIN < SUPER_ADMIN`) before writing any module below; every `allowedRoles`/`RoleWrapper` reference in this roadmap uses the new names. This is a breaking rename — do it once, in its own commit, before Phase 2.
 
@@ -56,7 +76,7 @@ Replace the legacy `auth/login` REST call in `auth.ts`'s `authorize()` with `Fir
 - Store/read `role` as a **Firebase custom claim** (`auth.setCustomUserClaims(uid, { role })`), set once at registration (Phase 2's `usuarios` module) and refreshed on role changes by an admin.
 - Keep everything downstream unchanged: `jwt`/`session` callbacks still copy `role` onto the NextAuth token/session (`next-auth.d.ts` types already support this), `cookies()` still set `jwt`/`refreshToken` if a bridging session cookie is wanted, `proxy.ts`'s `hasRequiredRole` gating is untouched.
 - Add a `verifyFirebaseAuth` helper alongside `withAuth` in `app/api/_shared/http/handler.ts` (or extend `withAuth` itself) so API routes can verify the Firebase ID token sent in the `Authorization` header for calls originating from the future React Native app, independent of the NextAuth cookie session used by the web app. Both must resolve to the same `{ uid, role }` shape for a given user.
-- Acceptance: a route decorated with `withAuth(handler, [Role.ADMIN])` correctly 401s an anonymous request, 403s a `Role.CLIENTE` request, and 200s an admin request, for both the NextAuth-cookie path (web) and the bearer-token path (future mobile).
+- Acceptance (as implemented): a route decorated with `withAuth(handler, [Permission.CONTACTS_READ])` correctly 401s an anonymous request, 403s a request with no matching permission, and 200s a request whose `permissions` claim includes it, for both the NextAuth-cookie path (web) and the bearer-token path (future mobile).
 
 ## Phase 2 — Firestore schema design + `usuarios`/roles
 

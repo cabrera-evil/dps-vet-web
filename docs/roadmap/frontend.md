@@ -6,13 +6,33 @@ No new data-fetching, auth-gating, forms, or table pattern is introduced anywher
 
 - **Data fetching**: `hooks/use-rest.tsx` (`useGet`, `usePost`, `usePatch`, `useDelete`, `useInfiniteGet`) — query keys are `[path, requestParams]`, mutations return the created/updated record.
 - **List pages**: `hooks/use-data-table.ts` + `components/table/*` (`data-table.tsx`, pagination, faceted filter, column header, view options) — binds TanStack Table to URL params via `nuqs`, encodes filters as a rison `q` param matching the backend's `FindManyArgs`-style query schemas (see `contact.schema.ts`'s `listContactsQuerySchema` as the shape every list endpoint below should mirror).
-- **Auth gating**: `components/wrappers/next-auth-wrapper.tsx` (`AuthWrapper`, `RoleWrapper`, `AuthRoleWrapper`) for client components; `proxy.ts` + `constants/route.ts`'s `protectedRoutes` for route-level redirects.
+- **Auth gating**: `components/wrappers/next-auth-wrapper.tsx` (`AuthWrapper`, `PermissionWrapper`, `AuthPermissionWrapper`) for client components; `proxy.ts` + `constants/route.ts`'s `protectedRoutes` for route-level redirects.
 - **Forms**: `schemas/*.ts` (zod) already holds `login.schema.ts`, `forgot-password.schema.ts`, `reset-password.schema.ts`, `user.schema.ts` — new forms add a sibling schema file, not a new validation approach.
 - **Styling**: Tailwind + `components/ui/**` (generated shadcn, `base-nova` style) — do not hand-edit `components/ui`; compose from it.
 
-## ⚠ Prerequisite from the backend side
+## ✅ Progress Checklist
 
-`constants/enum.ts`'s `Role` enum is being renamed from `USER|ADMIN|SUPER_ADMIN` to `CLIENTE|EMPLEADO|ADMINISTRADOR` (see `docs/roadmap/backend.md` Phase 1). Every `RoleWrapper roles={[...]}` and `protectedRoutes` entry below assumes the **new** names — if the backend rename hasn't landed yet, use the old names as placeholders and fix in the same PR that lands the enum rename.
+- [ ] **Phase 0** — Replace scaffold placeholders
+- [ ] **Phase 1** — Auth pages (`/auth/login`, `/auth/register`) — blocked on backend Phase 2 (`usuarios`); backend Phase 1 (Firebase Auth swap) is done, see the note below
+- [ ] **Phase 2** — Catálogo público
+- [ ] **Phase 3** — Cliente: Mascotas + Agenda de Citas
+- [ ] **Phase 4** — Panel de Administración shell
+- [ ] **Phase 5** — Historiales clínicos UI
+- [ ] **Phase 6** — Inventario y Pedidos screens
+- [ ] **Phase 7** — Reportes
+- [ ] **Phase 8** — Etapa 2 deploy checkpoint
+
+No frontend phase has started yet — none of the pages/components below exist. This checklist mirrors `docs/roadmap/backend.md`'s.
+
+## ⚠ Prerequisite from the backend side — updated 2026-09-16
+
+Backend Phase 1 landed, but **not** as originally described here: instead of renaming `Role` to `CLIENTE|EMPLEADO|ADMINISTRADOR`, the `Role` enum was **removed entirely**. Authorization is now permissions-only:
+
+- `components/wrappers/next-auth-wrapper.tsx` no longer exports `RoleWrapper`/`AuthRoleWrapper` — it exports `PermissionWrapper`/`AuthPermissionWrapper`, taking `permissions: Permission[]` (from `constants/permission.ts`) and an optional `mode: 'any' | 'all'`, not `roles: Role[]`.
+- `constants/route.ts`'s `protectedRoutes` entries use `requiredPermissions: Permission[]`, not `allowedRoles: Role[]`.
+- `session.user`/the NextAuth JWT carry `permissions: Permission[]` (and `uid: string`), not `role`.
+- Every `RoleWrapper roles={[...]}`/`allowedRoles`/`session.user.role` reference below and in `docs/roadmap/backend.md` needs the same substitution when that page/phase is actually built — treat any leftover `Role` mention in either roadmap doc as stale, not authoritative.
+- A "role" (Cliente/Empleado/Administrador) still exists conceptually — it's just a named group of permissions administered in Firestore (`roles` collection, seeded via `scripts/seed/`), not a frontend enum or hierarchy.
 
 ## Deadlines
 
@@ -71,13 +91,13 @@ Depends on backend Phase 3 (`mascotas`) and Phase 5 (`citas`, overlap validation
 
 ## Phase 4 — Panel de Administración shell (`/admin/*`)
 
-Depends on backend Phases 2–5 (all admin-facing CRUD). `constants/route.ts`'s `protectedRoutes` already gates `/admin/*` to elevated roles — update its `allowedRoles` to `[Role.EMPLEADO, Role.ADMINISTRADOR]` (or split into separate entries if Empleado and Administrador need different sub-route access, e.g. only Administrador reaches `/admin/usuarios`).
+Depends on backend Phases 2–5 (all admin-facing CRUD). `constants/route.ts`'s `protectedRoutes` already gates `/admin/*` — update its `requiredPermissions` to whichever `Permission` values the admin shell should require (e.g. the permissions granted to Empleado/Administrador in Firestore's `roles` collection, not a role name), or split into separate entries if some sub-routes need a narrower permission set (e.g. only an Administrador-only permission for `/admin/usuarios`).
 
 - `app/(admin)/admin/agenda/page.tsx`: daily/weekly calendar view of all citas (not just the caller's), status-change actions (confirm/mark attended/mark no-show) restricted per backend Phase 5's per-action roles.
 - `app/(admin)/admin/clientes/page.tsx`: list of clientes + their mascotas, using `use-data-table` + `components/table/data-table.tsx` for pagination/filtering (mirrors how a `contacts` admin list would look, once one exists — same list/filter/sort UX).
 - `app/(admin)/admin/servicios/page.tsx` and `app/(admin)/admin/medicamentos/page.tsx`: CRUD tables for the catalog, admin-only mutations per backend Phases 4 and 7.
 - `app/(admin)/admin/usuarios/page.tsx` (Administrador only): role management, calling the backend's role-change endpoint (backend Phase 2).
-- Navigation shell: a layout (`app/(admin)/admin/layout.tsx`) with sidebar/nav wrapping all the above, gated with `AuthRoleWrapper` at the layout level so individual pages don't repeat the check (defense in depth: `proxy.ts` already blocks the route server-side; the client wrapper is the UX-level empty/fallback state, not the security boundary).
+- Navigation shell: a layout (`app/(admin)/admin/layout.tsx`) with sidebar/nav wrapping all the above, gated with `AuthPermissionWrapper` at the layout level so individual pages don't repeat the check (defense in depth: `proxy.ts` already blocks the route server-side; the client wrapper is the UX-level empty/fallback state, not the security boundary).
 - Acceptance: an Empleado can reach `/admin/agenda` but not `/admin/usuarios` (if scoped that way); an unauthenticated visit to any `/admin/*` path redirects to `/auth/login` before any admin UI flashes.
 
 ## Phase 5 — Historiales clínicos UI
