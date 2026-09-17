@@ -10,6 +10,7 @@ import type {
 } from '@/app/api/_shared/repository/repository.types';
 import type { RoleDocument } from '@/app/api/_shared/repository/role.types';
 import type { Permission } from '@/constants/permission';
+import { RoleName } from '@/constants/roles';
 import createHttpError from 'http-errors';
 import type {
 	CreateUserInput,
@@ -20,7 +21,7 @@ import type {
 import type { UserListResult } from './user.types';
 
 /** Role assigned to every self-registered account; staff/admin roles are only ever granted via `updateRole`. */
-const DEFAULT_REGISTRATION_ROLE = 'CLIENTE';
+const DEFAULT_REGISTRATION_ROLE: RoleName = RoleName.CLIENTE;
 
 /**
  * User domain logic. Depends on the {@link FirestoreCrudRepository} for
