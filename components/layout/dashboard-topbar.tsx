@@ -1,14 +1,14 @@
 'use client';
 
-import { adminNavItems } from '@/components/layout/admin-nav-items';
+import { dashboardNavItems } from '@/components/layout/dashboard-nav-items';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
 
-export function AdminTopbar() {
+export function DashboardTopbar() {
 	const pathname = usePathname();
-	const current = adminNavItems.find((item) =>
-		item.href === '/admin'
+	const current = dashboardNavItems.find((item) =>
+		item.href === '/dashboard'
 			? pathname === item.href
 			: pathname.startsWith(item.href)
 	);

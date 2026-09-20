@@ -1,25 +1,23 @@
-import { ClientsTable } from '@/components/clients/clients-table';
+import { PatientsTable } from '@/components/patients/patients-table';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 
-export default function AdminClientsPage() {
+export default function DashboardPatientsPage() {
 	return (
 		<div className="flex flex-col gap-4">
 			<div className="flex items-center justify-between">
 				<div>
-					<h2 className="font-heading text-lg font-semibold">
-						Clientes y Tutores
-					</h2>
+					<h2 className="font-heading text-lg font-semibold">Pacientes</h2>
 					<p className="text-sm text-muted-foreground">
-						Tutores registrados y sus mascotas asociadas.
+						Historial clínico de los pacientes registrados.
 					</p>
 				</div>
 				<Button>
 					<Plus />
-					Nuevo tutor
+					Nuevo paciente
 				</Button>
 			</div>
-			<ClientsTable />
+			<PatientsTable />
 		</div>
 	);
 }

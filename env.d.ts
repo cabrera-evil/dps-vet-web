@@ -13,6 +13,11 @@ namespace NodeJS {
 		FIREBASE_PRIVATE_KEY: string;
 		FIREBASE_STORAGE_BUCKET: string;
 		FIREBASE_DATABASE_URL: string;
+		FIREBASE_WEB_API_KEY: string;
+		ADMIN_EMAIL?: string;
+		ADMIN_PASSWORD?: string;
+		ADMIN_NAME?: string;
+		ADMIN_PHONE?: string;
 		NEXT_PUBLIC_SENTRY_DSN: string;
 		SENTRY_PROJECT: string;
 		SENTRY_ORG: string;

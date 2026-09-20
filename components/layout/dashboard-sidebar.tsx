@@ -1,6 +1,6 @@
 'use client';
 
-import { adminNavItems } from '@/components/layout/admin-nav-items';
+import { dashboardNavItems } from '@/components/layout/dashboard-nav-items';
 import {
 	Sidebar,
 	SidebarContent,
@@ -18,7 +18,7 @@ import { signOut, useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-export function AdminSidebar() {
+export function DashboardSidebar() {
 	const pathname = usePathname();
 	const { data: session } = useSession();
 
@@ -37,9 +37,9 @@ export function AdminSidebar() {
 					<SidebarGroupLabel>Módulos</SidebarGroupLabel>
 					<SidebarGroupContent>
 						<SidebarMenu>
-							{adminNavItems.map((item) => {
+							{dashboardNavItems.map((item) => {
 								const isActive =
-									item.href === '/admin'
+									item.href === '/dashboard'
 										? pathname === item.href
 										: pathname.startsWith(item.href);
 								return (
