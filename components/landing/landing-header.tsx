@@ -1,7 +1,6 @@
 import { Button } from '@/components/ui/button';
 import {
 	CalendarDays,
-	ChevronDown,
 	LayoutDashboard,
 	Phone,
 	ShieldCheck,
@@ -92,15 +91,14 @@ export function LandingHeader() {
 					</nav>
 
 					<div className="flex shrink-0 items-center gap-2 sm:gap-3">
-						<a
+						<Link
 							className="hidden items-center gap-1.5 rounded-lg border bg-muted px-3.5 py-2 text-xs font-semibold transition-colors hover:bg-muted/70 hover:text-primary sm:inline-flex"
-							href="#portal"
+							href="/dashboard"
 							title="Acceso al portal para clientes, tutores y personal médico/administración"
 						>
 							<LayoutDashboard className="size-4 text-primary" />
 							Portal Clínico
-							<ChevronDown className="size-3.5 text-muted-foreground" />
-						</a>
+						</Link>
 						<Button nativeButton={false} render={<a href="#agendar" />}>
 							<CalendarDays />
 							Agendar Cita

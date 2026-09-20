@@ -11,6 +11,7 @@ import {
 import { Login, loginSchema } from '@/schemas/login.schema';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
+	ArrowLeft,
 	ArrowRight,
 	Eye,
 	EyeOff,
@@ -19,6 +20,7 @@ import {
 	Stethoscope,
 } from 'lucide-react';
 import { signIn } from 'next-auth/react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -52,19 +54,30 @@ export function LoginForm() {
 
 	return (
 		<section className="flex w-full flex-col justify-between overflow-y-auto p-6 sm:p-10 lg:w-[54%] lg:p-12 xl:w-1/2 xl:p-16">
-			<div className="flex items-center gap-3">
-				<div className="flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-					<Stethoscope className="size-5" />
+			<div className="flex items-center justify-between gap-3">
+				<div className="flex items-center gap-3">
+					<div className="flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+						<Stethoscope className="size-5" />
+					</div>
+					<div>
+						<h1 className="font-heading text-lg font-semibold tracking-tight">
+							Veterinaria San Roque
+						</h1>
+						<p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+							<span className="inline-block size-1.5 animate-pulse rounded-full bg-primary" />
+							Portal de Veterinaria San Roque
+						</p>
+					</div>
 				</div>
-				<div>
-					<h1 className="font-heading text-lg font-semibold tracking-tight">
-						Veterinaria San Roque
-					</h1>
-					<p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-						<span className="inline-block size-1.5 animate-pulse rounded-full bg-primary" />
-						Portal de Veterinaria San Roque
-					</p>
-				</div>
+				<Button
+					nativeButton={false}
+					render={<Link href="/" />}
+					size="sm"
+					variant="ghost"
+				>
+					<ArrowLeft />
+					Volver al sitio
+				</Button>
 			</div>
 
 			<div className="mx-auto my-auto w-full max-w-md py-8">
