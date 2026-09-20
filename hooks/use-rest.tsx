@@ -15,7 +15,10 @@ import rison from 'rison';
 
 // Type aliases for cleaner code
 type QueryKey = [string, Record<string, any>?];
-type QueryOptions<T> = UseQueryOptions<T, Error, T, QueryKey>;
+type QueryOptions<T> = Omit<
+	UseQueryOptions<T, Error, T, QueryKey>,
+	'queryKey' | 'queryFn'
+>;
 type MutationOptions<T> = UseMutationOptions<T, Error, RequestParams>;
 type InfiniteQueryOptions<T> = Omit<
 	UseInfiniteQueryOptions<

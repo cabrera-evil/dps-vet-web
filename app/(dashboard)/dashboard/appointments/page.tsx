@@ -1,7 +1,6 @@
 import { AppointmentBoxAvailability } from '@/components/appointments/appointment-box-availability';
+import { AppointmentFormDialog } from '@/components/appointments/appointment-form-dialog';
 import { AppointmentsTable } from '@/components/appointments/appointments-table';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
 
 export default function DashboardAppointmentsPage() {
 	return (
@@ -15,10 +14,7 @@ export default function DashboardAppointmentsPage() {
 						Gestiona las citas clínicas programadas.
 					</p>
 				</div>
-				<Button>
-					<Plus />
-					Nueva cita
-				</Button>
+				<AppointmentFormDialog />
 			</div>
 			<div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
 				<div className="xl:col-span-2">
