@@ -1,10 +1,13 @@
 import type { Seeder } from './seeder';
+import { adminSeeder } from './seeders/admin.seeder';
 import { permissionSeeder } from './seeders/permission.seeder';
 import { roleSeeder } from './seeders/role.seeder';
 
-// Order matters: roles reference permission codes, so permissions seed first.
-// Add future catalog seeders (e.g. pet species, service categories) here.
-const seeders: Seeder[] = [permissionSeeder, roleSeeder];
+// Order matters: roles reference permission codes, so permissions seed
+// first; the admin user references the ADMINISTRADOR role's permissions, so
+// it seeds last. Add future catalog seeders (e.g. pet species, service
+// categories) here, before adminSeeder.
+const seeders: Seeder[] = [permissionSeeder, roleSeeder, adminSeeder];
 
 async function main() {
 	for (const seeder of seeders) {

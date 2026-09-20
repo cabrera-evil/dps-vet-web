@@ -1,4 +1,4 @@
-import { verifyFirebaseIdToken } from '@/app/api/_shared/firebase/verify-id-token';
+import { loginService } from '@/app/api/auth/login/login.module';
 import NextAuth from 'next-auth';
 import 'next-auth/jwt';
 import CredentialsProvider from 'next-auth/providers/credentials';
@@ -11,13 +11,16 @@ const nextAuth = NextAuth({
 		CredentialsProvider({
 			name: 'credentials',
 			credentials: {
-				idToken: { label: 'Firebase ID Token', type: 'text' },
+				email: { label: 'Email', type: 'email' },
+				password: { label: 'Password', type: 'password' },
 			},
 			async authorize(credentials) {
-				const idToken = credentials?.idToken;
-				if (typeof idToken !== 'string' || !idToken) return null;
+				const email = credentials?.email;
+				const password = credentials?.password;
+				if (typeof email !== 'string' || typeof password !== 'string')
+					return null;
 				try {
-					const identity = await verifyFirebaseIdToken(idToken);
+					const identity = await loginService.login({ email, password });
 					return {
 						id: identity.uid,
 						uid: identity.uid,

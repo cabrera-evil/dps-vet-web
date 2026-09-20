@@ -25,6 +25,13 @@ export const FIREBASE_STATUS_BY_CODE: Record<string, number> = {
 	'auth/email-already-exists': StatusCodes.CONFLICT,
 	'auth/uid-already-exists': StatusCodes.CONFLICT,
 	'auth/phone-number-already-exists': StatusCodes.CONFLICT,
+	// Identity Toolkit REST API error codes (accounts:signInWithPassword),
+	// distinct from the Admin SDK's `auth/*` codes above — no slash prefix.
+	EMAIL_NOT_FOUND: StatusCodes.UNAUTHORIZED,
+	INVALID_PASSWORD: StatusCodes.UNAUTHORIZED,
+	INVALID_LOGIN_CREDENTIALS: StatusCodes.UNAUTHORIZED,
+	USER_DISABLED: StatusCodes.FORBIDDEN,
+	TOO_MANY_ATTEMPTS_TRY_LATER: StatusCodes.TOO_MANY_REQUESTS,
 };
 
 /** Strips the `service/` prefix from a Firebase error code, keeping `auth/*`. */
