@@ -29,3 +29,17 @@ export enum AuditAction {
 	UPDATE = 'UPDATE',
 	DELETE = 'DELETE',
 }
+
+export enum AppointmentStatus {
+	PENDING = 'PENDING',
+	CONFIRMED = 'CONFIRMED',
+	ATTENDED = 'ATTENDED',
+	CANCELLED = 'CANCELLED',
+	NO_SHOW = 'NO_SHOW',
+}
+
+export enum OrderStatus {
+	PENDING = 'PENDING',
+	FULFILLED = 'FULFILLED',
+	CANCELLED = 'CANCELLED',
+}

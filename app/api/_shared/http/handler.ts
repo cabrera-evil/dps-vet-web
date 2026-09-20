@@ -4,7 +4,7 @@ import { Permission } from '@/constants/permission';
 import { hasPermission } from '@/utils/permission';
 import createHttpError from 'http-errors';
 import type { NextRequest } from 'next/server';
-import type { RouteHandler } from './http.types';
+import type { Identity, RouteHandler } from './http.types';
 import { failure } from './response';
 
 /**
@@ -21,20 +21,13 @@ export function withRoute(handler: RouteHandler): RouteHandler {
 	};
 }
 
-interface ResolvedIdentity {
-	uid: string;
-	permissions: Permission[];
-}
-
 /**
  * Resolves the caller's identity from either the NextAuth session cookie
  * (web) or an `Authorization: Bearer <firebaseIdToken>` header (future
  * mobile app), producing the same `{ uid, permissions }` shape regardless of
  * which path authenticated the caller.
  */
-async function resolveIdentity(
-	request: NextRequest
-): Promise<ResolvedIdentity | null> {
+async function resolveIdentity(request: NextRequest): Promise<Identity | null> {
 	const authorizationHeader = request.headers.get('authorization');
 	if (authorizationHeader?.startsWith('Bearer ')) {
 		const idToken = authorizationHeader.slice('Bearer '.length).trim();
@@ -64,6 +57,6 @@ export function withAuth(
 			!hasPermission(identity.permissions, permissions, mode)
 		)
 			throw new createHttpError.Forbidden();
-		return handler(request, context);
+		return handler(request, { ...context, identity });
 	};
 }
