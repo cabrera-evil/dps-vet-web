@@ -3,7 +3,7 @@ import { AppointmentsTable } from '@/components/appointments/appointments-table'
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 
-export default function AdminAppointmentsPage() {
+export default function DashboardAppointmentsPage() {
 	return (
 		<div className="flex flex-col gap-4">
 			<div className="flex items-center justify-between">

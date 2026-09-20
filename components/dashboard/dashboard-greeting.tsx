@@ -30,7 +30,10 @@ export function DashboardGreeting() {
 					})}
 				</p>
 			</div>
-			<Button nativeButton={false} render={<Link href="/admin/appointments" />}>
+			<Button
+				nativeButton={false}
+				render={<Link href="/dashboard/appointments" />}
+			>
 				<Plus />
 				Nueva cita
 			</Button>

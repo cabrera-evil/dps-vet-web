@@ -53,7 +53,7 @@ export default function RootLayout({
 		<html
 			lang="en"
 			suppressHydrationWarning
-			className={cn('font-sans', geist.variable)}
+			className={cn('scroll-smooth font-sans', geist.variable)}
 		>
 			<body className="dark">
 				<Providers>{children}</Providers>

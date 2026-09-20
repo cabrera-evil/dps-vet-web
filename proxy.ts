@@ -38,7 +38,7 @@ export default async function proxy(request: NextRequest) {
 	const userPermissions = (token?.permissions as Permission[]) ?? [];
 	// Handle public routes (redirect authenticated users)
 	if (isAuthRoute && isAuthenticated)
-		return NextResponse.redirect(new URL('/admin', request.nextUrl));
+		return NextResponse.redirect(new URL('/dashboard', request.nextUrl));
 	// Handle permission-based routes
 	if (isProtectedRoute) {
 		// First check if user is authenticated

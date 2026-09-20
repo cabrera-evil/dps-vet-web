@@ -1,14 +1,14 @@
-import { AdminSidebar } from '@/components/layout/admin-sidebar';
-import { AdminTopbar } from '@/components/layout/admin-topbar';
+import { DashboardSidebar } from '@/components/layout/dashboard-sidebar';
+import { DashboardTopbar } from '@/components/layout/dashboard-topbar';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import type { ReactNode } from 'react';
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
+export default function DashboardLayout({ children }: { children: ReactNode }) {
 	return (
 		<SidebarProvider>
-			<AdminSidebar />
+			<DashboardSidebar />
 			<SidebarInset>
-				<AdminTopbar />
+				<DashboardTopbar />
 				<main className="flex flex-1 flex-col gap-4 p-4 md:p-6">
 					{children}
 				</main>

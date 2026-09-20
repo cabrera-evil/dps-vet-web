@@ -4,7 +4,7 @@ import { DashboardStaffOnDuty } from '@/components/dashboard/dashboard-staff-on-
 import { DashboardStats } from '@/components/dashboard/dashboard-stats';
 import { DashboardUpcomingAppointments } from '@/components/dashboard/dashboard-upcoming-appointments';
 
-export default function AdminDashboardPage() {
+export default function DashboardPage() {
 	return (
 		<div className="flex flex-col gap-4">
 			<DashboardGreeting />
