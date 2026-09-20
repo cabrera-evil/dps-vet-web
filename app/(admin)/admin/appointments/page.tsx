@@ -1,3 +1,4 @@
+import { AppointmentBoxAvailability } from '@/components/appointments/appointment-box-availability';
 import { AppointmentsTable } from '@/components/appointments/appointments-table';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
@@ -19,7 +20,12 @@ export default function AdminAppointmentsPage() {
 					Nueva cita
 				</Button>
 			</div>
-			<AppointmentsTable />
+			<div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+				<div className="xl:col-span-2">
+					<AppointmentsTable />
+				</div>
+				<AppointmentBoxAvailability />
+			</div>
 		</div>
 	);
 }

@@ -1,5 +1,11 @@
 import { dashboardStats } from '@/components/dashboard/mocks/dashboard.mock';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+	Card,
+	CardAction,
+	CardContent,
+	CardHeader,
+	CardTitle,
+} from '@/components/ui/card';
 
 export function DashboardStats() {
 	return (
@@ -10,6 +16,11 @@ export function DashboardStats() {
 						<CardTitle className="text-sm font-medium text-muted-foreground">
 							{stat.label}
 						</CardTitle>
+						<CardAction>
+							<div className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+								<stat.icon className="size-4" />
+							</div>
+						</CardAction>
 					</CardHeader>
 					<CardContent>
 						<p className="text-2xl font-semibold tabular-nums">{stat.value}</p>
