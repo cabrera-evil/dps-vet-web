@@ -32,6 +32,10 @@ export const FIREBASE_STATUS_BY_CODE: Record<string, number> = {
 	INVALID_LOGIN_CREDENTIALS: StatusCodes.UNAUTHORIZED,
 	USER_DISABLED: StatusCodes.FORBIDDEN,
 	TOO_MANY_ATTEMPTS_TRY_LATER: StatusCodes.TOO_MANY_REQUESTS,
+	// accounts:sendOobCode / accounts:resetPassword (forgot/reset password).
+	INVALID_OOB_CODE: StatusCodes.BAD_REQUEST,
+	EXPIRED_OOB_CODE: StatusCodes.BAD_REQUEST,
+	WEAK_PASSWORD: StatusCodes.BAD_REQUEST,
 };
 
 /** Strips the `service/` prefix from a Firebase error code, keeping `auth/*`. */

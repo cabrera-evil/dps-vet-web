@@ -1,13 +1,10 @@
 name: Deploy to Vercel
-description: |
-  This workflow deploys the application to Vercel and notifies the status on Discord.
-  It is triggered on push events to the master and develop branches.
 
 on:
-  push:
-    branches:
-      - master
-      - develop
+  # push:
+  #   branches:
+  #     - master
+  #     - develop
   workflow_dispatch:
 
 permissions:
