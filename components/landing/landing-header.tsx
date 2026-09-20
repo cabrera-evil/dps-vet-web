@@ -1,3 +1,4 @@
+import { LandingNav } from '@/components/landing/landing-nav';
 import { Button } from '@/components/ui/button';
 import {
 	CalendarDays,
@@ -74,21 +75,7 @@ export function LandingHeader() {
 						</div>
 					</div>
 
-					<nav className="hidden items-center gap-1 lg:flex xl:gap-1.5">
-						{NAV_LINKS.map((link, index) => (
-							<a
-								key={link.href}
-								className={
-									index === 0
-										? 'rounded-lg bg-muted px-3 py-2 text-xs font-semibold text-primary transition-colors'
-										: 'rounded-lg px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'
-								}
-								href={link.href}
-							>
-								{link.label}
-							</a>
-						))}
-					</nav>
+					<LandingNav links={NAV_LINKS} />
 
 					<div className="flex shrink-0 items-center gap-2 sm:gap-3">
 						<Link
