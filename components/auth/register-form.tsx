@@ -8,7 +8,8 @@ import {
 	InputGroupButton,
 	InputGroupInput,
 } from '@/components/ui/input-group';
-import { Login, loginSchema } from '@/schemas/login.schema';
+import { usePost } from '@/hooks/use-rest';
+import { Register, registerSchema } from '@/schemas/register.schema';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
 	ArrowLeft,
@@ -17,7 +18,9 @@ import {
 	EyeOff,
 	KeyRound,
 	Mail,
+	Phone,
 	Stethoscope,
+	User,
 } from 'lucide-react';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
@@ -26,25 +29,47 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
-export function LoginForm() {
+export function RegisterForm() {
 	const router = useRouter();
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [showPassword, setShowPassword] = useState(false);
+	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+	const { mutateAsync: registerUser } = usePost();
 	const {
 		register,
 		handleSubmit,
 		formState: { errors },
-	} = useForm<Login>({ resolver: zodResolver(loginSchema) });
+	} = useForm<Register>({ resolver: zodResolver(registerSchema) });
 
-	async function onSubmit(values: Login) {
+	async function onSubmit(values: Register) {
 		setIsSubmitting(true);
-		const result = await signIn('credentials', { ...values, redirect: false });
+		try {
+			await registerUser({
+				path: '/api/users',
+				payload: {
+					name: values.name,
+					email: values.email,
+					phone: values.phone,
+					password: values.password,
+				},
+			});
+		} catch {
+			setIsSubmitting(false);
+			return;
+		}
+
+		const result = await signIn('credentials', {
+			email: values.email,
+			password: values.password,
+			redirect: false,
+		});
 		setIsSubmitting(false);
 
 		if (!result || result.error) {
-			toast.error('No se pudo iniciar sesión', {
-				description: 'Verifica tu correo y contraseña e intenta nuevamente.',
+			toast.success('Cuenta creada', {
+				description: 'Ya puedes iniciar sesión con tus credenciales.',
 			});
+			router.push('/auth/login');
 			return;
 		}
 
@@ -83,14 +108,30 @@ export function LoginForm() {
 			<div className="mx-auto my-auto w-full max-w-md py-8">
 				<div className="mb-7">
 					<h2 className="text-2xl font-semibold tracking-tight text-balance">
-						Inicia sesión
+						Crea tu cuenta
 					</h2>
 					<p className="mt-1 text-sm text-muted-foreground">
-						Ingresa tus credenciales para acceder a tu cuenta.
+						Regístrate para gestionar las citas y el historial de tus mascotas.
 					</p>
 				</div>
 
 				<form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
+					<Field data-invalid={!!errors.name}>
+						<FieldLabel htmlFor="name">Nombre completo</FieldLabel>
+						<InputGroup>
+							<InputGroupAddon>
+								<User />
+							</InputGroupAddon>
+							<InputGroupInput
+								id="name"
+								type="text"
+								autoComplete="name"
+								placeholder="Nombre y apellido"
+								{...register('name')}
+							/>
+						</InputGroup>
+						<FieldError errors={errors.name ? [errors.name] : undefined} />
+					</Field>
 					<Field data-invalid={!!errors.email}>
 						<FieldLabel htmlFor="email">Correo electrónico</FieldLabel>
 						<InputGroup>
@@ -107,16 +148,24 @@ export function LoginForm() {
 						</InputGroup>
 						<FieldError errors={errors.email ? [errors.email] : undefined} />
 					</Field>
+					<Field data-invalid={!!errors.phone}>
+						<FieldLabel htmlFor="phone">Teléfono</FieldLabel>
+						<InputGroup>
+							<InputGroupAddon>
+								<Phone />
+							</InputGroupAddon>
+							<InputGroupInput
+								id="phone"
+								type="tel"
+								autoComplete="tel"
+								placeholder="+503 0000-0000"
+								{...register('phone')}
+							/>
+						</InputGroup>
+						<FieldError errors={errors.phone ? [errors.phone] : undefined} />
+					</Field>
 					<Field data-invalid={!!errors.password}>
-						<div className="flex items-center justify-between">
-							<FieldLabel htmlFor="password">Contraseña</FieldLabel>
-							<Link
-								href="/auth/forgot-password"
-								className="text-xs font-medium text-primary hover:underline"
-							>
-								¿Olvidaste tu contraseña?
-							</Link>
-						</div>
+						<FieldLabel htmlFor="password">Contraseña</FieldLabel>
 						<InputGroup>
 							<InputGroupAddon>
 								<KeyRound />
@@ -124,7 +173,7 @@ export function LoginForm() {
 							<InputGroupInput
 								id="password"
 								type={showPassword ? 'text' : 'password'}
-								autoComplete="current-password"
+								autoComplete="new-password"
 								{...register('password')}
 							/>
 							<InputGroupAddon align="inline-end">
@@ -143,19 +192,53 @@ export function LoginForm() {
 							errors={errors.password ? [errors.password] : undefined}
 						/>
 					</Field>
+					<Field data-invalid={!!errors.confirmPassword}>
+						<FieldLabel htmlFor="confirmPassword">
+							Confirmar contraseña
+						</FieldLabel>
+						<InputGroup>
+							<InputGroupAddon>
+								<KeyRound />
+							</InputGroupAddon>
+							<InputGroupInput
+								id="confirmPassword"
+								type={showConfirmPassword ? 'text' : 'password'}
+								autoComplete="new-password"
+								{...register('confirmPassword')}
+							/>
+							<InputGroupAddon align="inline-end">
+								<InputGroupButton
+									type="button"
+									aria-label={
+										showConfirmPassword
+											? 'Ocultar contraseña'
+											: 'Mostrar contraseña'
+									}
+									onClick={() => setShowConfirmPassword((value) => !value)}
+								>
+									{showConfirmPassword ? <EyeOff /> : <Eye />}
+								</InputGroupButton>
+							</InputGroupAddon>
+						</InputGroup>
+						<FieldError
+							errors={
+								errors.confirmPassword ? [errors.confirmPassword] : undefined
+							}
+						/>
+					</Field>
 					<Button type="submit" className="w-full" disabled={isSubmitting}>
-						Iniciar sesión
+						Crear cuenta
 						<ArrowRight />
 					</Button>
 				</form>
 
 				<p className="mt-6 text-center text-sm text-muted-foreground">
-					¿No tienes cuenta?{' '}
+					¿Ya tienes cuenta?{' '}
 					<Link
-						href="/auth/register"
+						href="/auth/login"
 						className="font-medium text-primary hover:underline"
 					>
-						Regístrate
+						Inicia sesión
 					</Link>
 				</p>
 			</div>
