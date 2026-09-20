@@ -1,7 +1,11 @@
 import { withSentryConfig } from '@sentry/nextjs';
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-	output: 'standalone',
+	// 'standalone' output is only needed for the Docker/self-hosted build.
+	// Forcing it on Vercel breaks its own output tracing (ENOENT on
+	// .next/next-server.js.nft.json), since Vercel expects the default
+	// serverless output layout, not the standalone bundle.
+	...(process.env.VERCEL ? {} : { output: 'standalone' }),
 	serverExternalPackages: ['firebase-admin'],
 	images: {
 		remotePatterns: [
