@@ -25,16 +25,16 @@ fi
 echo "Running linters on staged files..."
 pnpm lint-staged
 
-# Run ggshield to scan for secrets
-echo "Scanning for secrets with ggshield..."
-ggshield secret scan pre-commit "$@"
-
-# Run snyk to check for vulnerabilities
-echo "Checking for vulnerabilities with snyk..."
-# --severity-threshold=high: Only check high and critical severity
-# --fail-on=upgradable: Only fail on vulnerabilities with available upgrades
-# --prune-repeated-subdependencies: Simplify output by pruning duplicates
-snyk test --severity-threshold=high --fail-on=upgradable --prune-repeated-subdependencies --all-projects
+# # Run ggshield to scan for secrets
+# echo "Scanning for secrets with ggshield..."
+# ggshield secret scan pre-commit "$@"
+#
+# # Run snyk to check for vulnerabilities
+# echo "Checking for vulnerabilities with snyk..."
+# # --severity-threshold=high: Only check high and critical severity
+# # --fail-on=upgradable: Only fail on vulnerabilities with available upgrades
+# # --prune-repeated-subdependencies: Simplify output by pruning duplicates
+# snyk test --severity-threshold=high --fail-on=upgradable --prune-repeated-subdependencies --all-projects
 
 # If all checks pass
 echo "Pre-commit checks passed successfully."

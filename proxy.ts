@@ -1,12 +1,12 @@
 import { getToken } from 'next-auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
-import { Role } from './constants/enum';
+import { Permission } from './constants/permission';
 import { authRoutes, protectedRoutes } from './constants/route';
-import { hasRequiredRole } from './utils/role';
+import { hasPermission } from './utils/permission';
 
 interface RouteConfig {
 	path: string;
-	allowedRoles: Role[];
+	requiredPermissions: Permission[];
 }
 
 function matchRoute<T extends string | RouteConfig>(
@@ -35,20 +35,17 @@ export default async function proxy(request: NextRequest) {
 	const isAuthRoute = matchRoute(pathname, authRoutes);
 	const isProtectedRoute = matchRoute(pathname, protectedRoutes);
 	const isAuthenticated = Boolean(token?.sub);
-	const userRole = token?.role as Role;
+	const userPermissions = (token?.permissions as Permission[]) ?? [];
 	// Handle public routes (redirect authenticated users)
 	if (isAuthRoute && isAuthenticated)
 		return NextResponse.redirect(new URL('/', request.nextUrl));
-	// Handle role-based routes
+	// Handle permission-based routes
 	if (isProtectedRoute) {
 		// First check if user is authenticated
 		if (!isAuthenticated)
 			return NextResponse.redirect(new URL('/auth/login', request.nextUrl));
-		// Then check if user has required role
-		if (
-			!userRole ||
-			!hasRequiredRole(userRole, isProtectedRoute.allowedRoles)
-		) {
+		// Then check if user has required permissions
+		if (!hasPermission(userPermissions, isProtectedRoute.requiredPermissions)) {
 			// Redirect to unauthorized page or home page
 			return NextResponse.redirect(new URL('/unauthorized', request.nextUrl));
 		}

@@ -1,4 +1,3 @@
-import { Role } from '@/constants/enum';
 import { z } from 'zod';
 
 export const userSchema = z.object({
@@ -7,7 +6,7 @@ export const userSchema = z.object({
 	lastName: z.string(),
 	username: z.string(),
 	email: z.string().email(),
-	role: z.nativeEnum(Role),
+	role: z.string(),
 	password: z.string(),
 	provider: z.string(),
 	emailVerified: z.boolean().optional(),

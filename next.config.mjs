@@ -2,6 +2,7 @@ import { withSentryConfig } from '@sentry/nextjs';
 /** @type {import('next').NextConfig} */
 const nextConfig = {
 	output: 'standalone',
+	serverExternalPackages: ['firebase-admin'],
 	images: {
 		remotePatterns: [
 			{
@@ -27,6 +28,9 @@ const nextConfig = {
 			{ source: '/api/auth/session', destination: '/api/auth/session' },
 			{ source: '/api/auth/csrf', destination: '/api/auth/csrf' },
 			{ source: '/api/auth/providers', destination: '/api/auth/providers' },
+			// TODO(self-hosted-api): the backend is migrating into `app/api/**`
+			// (see app/api/_shared + app/api/contacts). Remove this proxy rewrite
+			// and NEXT_PUBLIC_API_URL once every consumed endpoint is served locally.
 			// Proxy EVERYTHING else
 			...(process.env.NEXT_PUBLIC_API_URL
 				? [

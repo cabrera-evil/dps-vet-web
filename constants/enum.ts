@@ -1,9 +1,3 @@
-export enum Role {
-	USER = 'USER',
-	ADMIN = 'ADMIN',
-	SUPER_ADMIN = 'SUPER_ADMIN',
-}
-
 export enum Provider {
 	LOCAL = 'LOCAL',
 	GOOGLE = 'GOOGLE',
@@ -34,4 +28,18 @@ export enum AuditAction {
 	CREATE = 'CREATE',
 	UPDATE = 'UPDATE',
 	DELETE = 'DELETE',
+}
+
+export enum AppointmentStatus {
+	PENDING = 'PENDING',
+	CONFIRMED = 'CONFIRMED',
+	ATTENDED = 'ATTENDED',
+	CANCELLED = 'CANCELLED',
+	NO_SHOW = 'NO_SHOW',
+}
+
+export enum OrderStatus {
+	PENDING = 'PENDING',
+	FULFILLED = 'FULFILLED',
+	CANCELLED = 'CANCELLED',
 }

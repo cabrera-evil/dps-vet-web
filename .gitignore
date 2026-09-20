@@ -48,3 +48,9 @@ secrets.yaml
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# Course Docs
+docs/course/**
+
+# Firebase Config (service-account keys, etc.)
+config/*.json

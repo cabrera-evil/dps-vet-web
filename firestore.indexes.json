@@ -1,0 +1,103 @@
+{
+	"indexes": [
+		{
+			"collectionGroup": "pets",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "ownerId", "order": "ASCENDING" },
+				{ "fieldPath": "createdAt", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "services",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "category", "order": "ASCENDING" },
+				{ "fieldPath": "createdAt", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "services",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "active", "order": "ASCENDING" },
+				{ "fieldPath": "createdAt", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "services",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "category", "order": "ASCENDING" },
+				{ "fieldPath": "active", "order": "ASCENDING" },
+				{ "fieldPath": "createdAt", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "appointments",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "clientId", "order": "ASCENDING" },
+				{ "fieldPath": "start", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "appointments",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "status", "order": "ASCENDING" },
+				{ "fieldPath": "start", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "appointments",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "clientId", "order": "ASCENDING" },
+				{ "fieldPath": "status", "order": "ASCENDING" },
+				{ "fieldPath": "start", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "medical-records",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "petId", "order": "ASCENDING" },
+				{ "fieldPath": "date", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "orders",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "clientId", "order": "ASCENDING" },
+				{ "fieldPath": "createdAt", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "orders",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "status", "order": "ASCENDING" },
+				{ "fieldPath": "createdAt", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "orders",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "clientId", "order": "ASCENDING" },
+				{ "fieldPath": "status", "order": "ASCENDING" },
+				{ "fieldPath": "createdAt", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "orders",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "status", "order": "ASCENDING" },
+				{ "fieldPath": "createdAt", "order": "ASCENDING" }
+			]
+		}
+	]
+}
