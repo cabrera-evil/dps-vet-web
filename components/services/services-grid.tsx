@@ -1,4 +1,5 @@
-import { servicesMock } from '@/components/services/mocks/services.mock';
+'use client';
+
 import { Badge } from '@/components/ui/badge';
 import {
 	Card,
@@ -7,12 +8,36 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@/components/ui/card';
+import { Spinner } from '@/components/ui/spinner';
+import { useGet } from '@/hooks/use-rest';
+import { Service } from '@/types/service.type';
 import { Clock } from 'lucide-react';
 
 export function ServicesGrid() {
+	const { data: services, isLoading } = useGet<Service[]>({
+		path: '/services',
+		params: { pageSize: 100 },
+	});
+
+	if (isLoading) {
+		return (
+			<div className="flex justify-center py-6">
+				<Spinner />
+			</div>
+		);
+	}
+
+	if (!services?.length) {
+		return (
+			<p className="text-center text-sm text-muted-foreground">
+				No se encontraron servicios.
+			</p>
+		);
+	}
+
 	return (
 		<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-			{servicesMock.map((service) => (
+			{services.map((service) => (
 				<Card key={service.id}>
 					<CardHeader>
 						<div className="flex items-center justify-between gap-2">
