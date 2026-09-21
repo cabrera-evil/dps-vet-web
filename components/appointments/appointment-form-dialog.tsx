@@ -1,5 +1,6 @@
 'use client';
 
+import { DatePicker } from '@/components/custom/date-picker';
 import { Button } from '@/components/ui/button';
 import {
 	Dialog,
@@ -181,7 +182,18 @@ export function AppointmentFormDialog({ trigger }: { trigger?: ReactElement }) {
 						<div className="grid grid-cols-2 gap-4">
 							<Field data-invalid={!!errors.date}>
 								<FieldLabel htmlFor="date">Fecha</FieldLabel>
-								<Input id="date" type="date" {...register('date')} />
+								<Controller
+									name="date"
+									control={control}
+									render={({ field }) => (
+										<DatePicker
+											id="date"
+											value={field.value}
+											onChange={field.onChange}
+											onBlur={field.onBlur}
+										/>
+									)}
+								/>
 								<FieldError errors={errors.date ? [errors.date] : undefined} />
 							</Field>
 							<Field data-invalid={!!errors.time}>

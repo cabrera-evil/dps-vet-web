@@ -1,5 +1,6 @@
 'use client';
 
+import { DatePicker } from '@/components/custom/date-picker';
 import { Button } from '@/components/ui/button';
 import {
 	Dialog,
@@ -210,7 +211,18 @@ export function PetFormDialog(props: PetFormDialogProps) {
 					</div>
 					<Field data-invalid={!!errors.birthDate}>
 						<FieldLabel htmlFor="birthDate">Fecha de nacimiento</FieldLabel>
-						<Input id="birthDate" type="date" {...register('birthDate')} />
+						<Controller
+							name="birthDate"
+							control={control}
+							render={({ field }) => (
+								<DatePicker
+									id="birthDate"
+									value={field.value}
+									onChange={field.onChange}
+									onBlur={field.onBlur}
+								/>
+							)}
+						/>
 						<FieldError
 							errors={errors.birthDate ? [errors.birthDate] : undefined}
 						/>
