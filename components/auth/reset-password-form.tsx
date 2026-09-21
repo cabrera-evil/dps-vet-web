@@ -48,7 +48,7 @@ export function ResetPasswordForm() {
 		setIsSubmitting(true);
 		try {
 			await resetPassword({
-				path: '/api/auth/reset-password',
+				path: '/auth/reset-password',
 				payload: { oobCode, password: values.password },
 			});
 			setCompleted(true);

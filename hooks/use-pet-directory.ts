@@ -5,7 +5,7 @@ import { hasPermission } from '@/utils/permission';
 import { useSession } from 'next-auth/react';
 
 /**
- * Resolves a pet's `ownerId` to a display name. `/api/users` is only
+ * Resolves a pet's `ownerId` to a display name. `/users` is only
  * fetched when the caller has `USERS_READ` (staff/admin) — a plain client
  * never has it and never needs it, since they only ever see their own pets.
  */
@@ -19,7 +19,7 @@ export function usePetDirectory() {
 	]);
 
 	const { data: users } = useGet<AppointmentClient[]>(
-		{ path: '/api/users', params: { pageSize: 100 } },
+		{ path: '/users', params: { pageSize: 100 } },
 		{ enabled: canReadUsers }
 	);
 

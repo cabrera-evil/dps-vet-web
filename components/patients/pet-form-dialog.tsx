@@ -24,7 +24,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
 function invalidatePets() {
-	return queryClient.invalidateQueries({ queryKey: ['/api/pets'] });
+	return queryClient.invalidateQueries({ queryKey: ['/pets'] });
 }
 
 type PetFormDialogProps =
@@ -65,9 +65,9 @@ export function PetFormDialog(props: PetFormDialogProps) {
 	async function onSubmit(values: PetFormValues) {
 		try {
 			if (mode === 'edit') {
-				await updatePet({ path: `/api/pets/${props.pet.id}`, payload: values });
+				await updatePet({ path: `/pets/${props.pet.id}`, payload: values });
 			} else {
-				await createPet({ path: '/api/pets', payload: values });
+				await createPet({ path: '/pets', payload: values });
 			}
 		} catch {
 			return;

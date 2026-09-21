@@ -45,7 +45,7 @@ export function RegisterForm() {
 		setIsSubmitting(true);
 		try {
 			await registerUser({
-				path: '/api/users',
+				path: '/users',
 				payload: {
 					name: values.name,
 					email: values.email,

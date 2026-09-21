@@ -30,7 +30,7 @@ export function PatientsTable() {
 	const [query, setQuery] = useState('');
 	const { canManageAll, getOwnerName } = usePetDirectory();
 	const { data: pets, isLoading } = useGet<Pet[]>({
-		path: '/api/pets',
+		path: '/pets',
 		params: { pageSize: 100 },
 	});
 

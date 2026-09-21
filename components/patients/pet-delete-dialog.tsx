@@ -23,11 +23,11 @@ export function PetDeleteDialog({ pet }: { pet: Pet }) {
 
 	async function handleConfirm() {
 		try {
-			await deletePet({ path: `/api/pets/${pet.id}` });
+			await deletePet({ path: `/pets/${pet.id}` });
 		} catch {
 			return;
 		}
-		await queryClient.invalidateQueries({ queryKey: ['/api/pets'] });
+		await queryClient.invalidateQueries({ queryKey: ['/pets'] });
 		toast.success('Mascota eliminada');
 	}
 

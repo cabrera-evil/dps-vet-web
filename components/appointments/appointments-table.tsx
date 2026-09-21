@@ -62,7 +62,7 @@ const STATUS_LABEL: Record<AppointmentStatus, string> = {
 };
 
 function invalidateAppointments() {
-	return queryClient.invalidateQueries({ queryKey: ['/api/appointments'] });
+	return queryClient.invalidateQueries({ queryKey: ['/appointments'] });
 }
 
 function AppointmentActions({ appointment }: { appointment: Appointment }) {
@@ -84,7 +84,7 @@ function AppointmentActions({ appointment }: { appointment: Appointment }) {
 					if (!status) return;
 					try {
 						await updateStatus({
-							path: `/api/appointments/${appointment.id}/status`,
+							path: `/appointments/${appointment.id}/status`,
 							payload: { status },
 						});
 						await invalidateAppointments();
@@ -119,7 +119,7 @@ function AppointmentActions({ appointment }: { appointment: Appointment }) {
 			onClick={async () => {
 				try {
 					await cancelAppointment({
-						path: `/api/appointments/${appointment.id}`,
+						path: `/appointments/${appointment.id}`,
 					});
 				} catch {
 					return;
@@ -205,7 +205,7 @@ export function AppointmentsTable() {
 	const { getPetName, getUserName } = useAppointmentDirectory();
 
 	const { data: appointments, isLoading } = useGet<Appointment[]>({
-		path: '/api/appointments',
+		path: '/appointments',
 		params: {
 			pageSize: 100,
 			status: statusFilter === 'all' ? undefined : statusFilter,

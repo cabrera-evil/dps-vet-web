@@ -10,7 +10,7 @@ import { useSession } from 'next-auth/react';
 
 /**
  * Resolves appointment foreign ids (pet/service/client/staff) to display
- * names. `/api/users` is only fetched when the caller has `USERS_READ`
+ * names. `/users` is only fetched when the caller has `USERS_READ`
  * (staff/admin) — a plain client never has it, so their own name is derived
  * from the session instead.
  */
@@ -24,15 +24,15 @@ export function useAppointmentDirectory() {
 	]);
 
 	const { data: pets } = useGet<AppointmentPet[]>({
-		path: '/api/pets',
+		path: '/pets',
 		params: { pageSize: 100 },
 	});
 	const { data: services } = useGet<AppointmentService[]>({
-		path: '/api/services',
+		path: '/services',
 		params: { pageSize: 100 },
 	});
 	const { data: users } = useGet<AppointmentClient[]>(
-		{ path: '/api/users', params: { pageSize: 100 } },
+		{ path: '/users', params: { pageSize: 100 } },
 		{ enabled: canReadUsers }
 	);
 

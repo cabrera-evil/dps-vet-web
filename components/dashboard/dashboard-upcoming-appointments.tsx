@@ -25,7 +25,7 @@ const UPCOMING_STATUSES = new Set<AppointmentStatus>([
 export function DashboardUpcomingAppointments() {
 	const { getPetName, getServiceName, getUserName } = useAppointmentDirectory();
 	const { data: appointments, isLoading } = useGet<Appointment[]>({
-		path: '/api/appointments',
+		path: '/appointments',
 		params: { pageSize: 100 },
 	});
 

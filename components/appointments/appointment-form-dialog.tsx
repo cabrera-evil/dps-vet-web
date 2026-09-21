@@ -32,13 +32,13 @@ import { toast } from 'sonner';
 export function AppointmentFormDialog({ trigger }: { trigger?: ReactElement }) {
 	const [open, setOpen] = useState(false);
 	const { data: pets, isLoading: isLoadingPets } = useGet<AppointmentPet[]>({
-		path: '/api/pets',
+		path: '/pets',
 		params: { pageSize: 100 },
 	});
 	const { data: services, isLoading: isLoadingServices } = useGet<
 		AppointmentService[]
 	>({
-		path: '/api/services',
+		path: '/services',
 		params: { pageSize: 100, active: 'true' },
 	});
 	const { mutateAsync: createAppointment, isPending } = usePost();
@@ -57,7 +57,7 @@ export function AppointmentFormDialog({ trigger }: { trigger?: ReactElement }) {
 
 		try {
 			await createAppointment({
-				path: '/api/appointments',
+				path: '/appointments',
 				payload: {
 					petId: values.petId,
 					serviceId: values.serviceId,
@@ -68,7 +68,7 @@ export function AppointmentFormDialog({ trigger }: { trigger?: ReactElement }) {
 			return;
 		}
 
-		await queryClient.invalidateQueries({ queryKey: ['/api/appointments'] });
+		await queryClient.invalidateQueries({ queryKey: ['/appointments'] });
 		toast.success('Cita solicitada', {
 			description: 'Te avisaremos cuando sea confirmada.',
 		});
