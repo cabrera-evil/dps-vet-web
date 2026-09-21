@@ -26,7 +26,7 @@ export class RestService {
 		// absolute origin on the server) and drop NEXT_PUBLIC_API_URL/PROXY/HOST.
 		this.axiosInstance = axios.create({
 			baseURL: process.env.NEXT_PUBLIC_PROXY
-				? `${process.env.NEXT_PUBLIC_HOST}/api`
+				? process.env.NEXT_PUBLIC_HOST
 				: process.env.NEXT_PUBLIC_API_URL,
 			withCredentials: true,
 		});

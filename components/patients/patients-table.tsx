@@ -1,9 +1,11 @@
 'use client';
 
-import { patientsMock } from '@/components/patients/mocks/patients.mock';
+import { PetDeleteDialog } from '@/components/patients/pet-delete-dialog';
+import { PetFormDialog } from '@/components/patients/pet-form-dialog';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
 import {
 	Table,
 	TableBody,
@@ -12,6 +14,9 @@ import {
 	TableHeader,
 	TableRow,
 } from '@/components/ui/table';
+import { usePetDirectory } from '@/hooks/use-pet-directory';
+import { useGet } from '@/hooks/use-rest';
+import { Pet } from '@/types/pet.type';
 import { Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
@@ -23,17 +28,22 @@ function getAgeLabel(birthDate: string) {
 
 export function PatientsTable() {
 	const [query, setQuery] = useState('');
+	const { canManageAll, getOwnerName } = usePetDirectory();
+	const { data: pets, isLoading } = useGet<Pet[]>({
+		path: '/pets',
+		params: { pageSize: 100 },
+	});
 
-	const patients = useMemo(() => {
+	const filtered = useMemo(() => {
 		const normalized = query.trim().toLowerCase();
-		if (!normalized) return patientsMock;
-		return patientsMock.filter((patient) =>
-			[patient.name, patient.ownerName, patient.breed]
+		if (!normalized) return pets ?? [];
+		return (pets ?? []).filter((pet) =>
+			[pet.name, pet.breed, pet.species, getOwnerName(pet.ownerId)]
 				.join(' ')
 				.toLowerCase()
 				.includes(normalized)
 		);
-	}, [query]);
+	}, [pets, query, getOwnerName]);
 
 	return (
 		<Card>
@@ -47,47 +57,62 @@ export function PatientsTable() {
 						className="pl-9"
 					/>
 				</div>
-				<Table>
-					<TableHeader>
-						<TableRow>
-							<TableHead>Paciente</TableHead>
-							<TableHead>Especie</TableHead>
-							<TableHead>Raza</TableHead>
-							<TableHead>Edad</TableHead>
-							<TableHead>Tutor</TableHead>
-						</TableRow>
-					</TableHeader>
-					<TableBody>
-						{patients.map((patient) => (
-							<TableRow key={patient.id}>
-								<TableCell>
-									<div className="flex items-center gap-2">
-										<Avatar className="size-8">
-											<AvatarFallback>
-												{patient.name.slice(0, 2).toUpperCase()}
-											</AvatarFallback>
-										</Avatar>
-										<span className="font-medium">{patient.name}</span>
-									</div>
-								</TableCell>
-								<TableCell>{patient.species}</TableCell>
-								<TableCell>{patient.breed}</TableCell>
-								<TableCell>{getAgeLabel(patient.birthDate)}</TableCell>
-								<TableCell>{patient.ownerName}</TableCell>
-							</TableRow>
-						))}
-						{patients.length === 0 && (
+				{isLoading ? (
+					<div className="flex justify-center py-6">
+						<Spinner />
+					</div>
+				) : (
+					<Table>
+						<TableHeader>
 							<TableRow>
-								<TableCell
-									colSpan={5}
-									className="text-center text-sm text-muted-foreground"
-								>
-									No se encontraron pacientes.
-								</TableCell>
+								<TableHead>Paciente</TableHead>
+								<TableHead>Especie</TableHead>
+								<TableHead>Raza</TableHead>
+								<TableHead>Edad</TableHead>
+								{canManageAll && <TableHead>Tutor</TableHead>}
+								<TableHead className="text-right">Acciones</TableHead>
 							</TableRow>
-						)}
-					</TableBody>
-				</Table>
+						</TableHeader>
+						<TableBody>
+							{filtered.map((pet) => (
+								<TableRow key={pet.id}>
+									<TableCell>
+										<div className="flex items-center gap-2">
+											<Avatar className="size-8">
+												<AvatarFallback>
+													{pet.name.slice(0, 2).toUpperCase()}
+												</AvatarFallback>
+											</Avatar>
+											<span className="font-medium">{pet.name}</span>
+										</div>
+									</TableCell>
+									<TableCell>{pet.species}</TableCell>
+									<TableCell>{pet.breed}</TableCell>
+									<TableCell>{getAgeLabel(pet.birthDate)}</TableCell>
+									{canManageAll && (
+										<TableCell>{getOwnerName(pet.ownerId)}</TableCell>
+									)}
+									<TableCell className="text-right">
+										<div className="flex justify-end gap-2">
+											<PetFormDialog mode="edit" pet={pet} />
+											<PetDeleteDialog pet={pet} />
+										</div>
+									</TableCell>
+								</TableRow>
+							))}
+							{filtered.length === 0 && (
+								<TableRow>
+									<TableCell
+										colSpan={canManageAll ? 6 : 5}
+										className="text-center text-sm text-muted-foreground"
+									>
+										No se encontraron pacientes.
+									</TableCell>
+								</TableRow>
+							)}
+						</TableBody>
+					</Table>
+				)}
 			</CardContent>
 		</Card>
 	);

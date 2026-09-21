@@ -39,7 +39,7 @@ export function ForgotPasswordForm() {
 		setIsSubmitting(true);
 		try {
 			await requestReset({
-				path: '/api/auth/forgot-password',
+				path: '/auth/forgot-password',
 				payload: values,
 			});
 			setSubmittedEmail(values.email);

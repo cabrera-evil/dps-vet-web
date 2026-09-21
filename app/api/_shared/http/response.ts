@@ -36,11 +36,10 @@ export function noContent(): NextResponse {
  */
 export function failure(error: unknown): NextResponse {
 	const { statusCode, message, errors } = toErrorBody(error);
-	if (
-		statusCode >= StatusCodes.INTERNAL_SERVER_ERROR &&
-		process.env.NODE_ENV !== 'development'
-	)
-		Sentry.captureException(error);
+	if (statusCode >= StatusCodes.INTERNAL_SERVER_ERROR) {
+		if (process.env.NODE_ENV === 'development') console.error(error);
+		else Sentry.captureException(error);
+	}
 	const body: ApiErrorResponse = {
 		statusCode,
 		message,

@@ -1,6 +1,5 @@
 import { PatientsTable } from '@/components/patients/patients-table';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { PetFormDialog } from '@/components/patients/pet-form-dialog';
 
 export default function DashboardPatientsPage() {
 	return (
@@ -12,10 +11,7 @@ export default function DashboardPatientsPage() {
 						Historial clínico de los pacientes registrados.
 					</p>
 				</div>
-				<Button>
-					<Plus />
-					Nuevo paciente
-				</Button>
+				<PetFormDialog mode="create" />
 			</div>
 			<PatientsTable />
 		</div>
