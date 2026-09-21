@@ -77,8 +77,12 @@ function AppointmentActions({ appointment }: { appointment: Appointment }) {
 	if (canManageAll) {
 		const transitions = ALLOWED_TRANSITIONS[appointment.status];
 		if (!transitions.length) return null;
+		const statusItems = Object.fromEntries(
+			transitions.map((status) => [status, STATUS_LABEL[status]])
+		);
 		return (
 			<Select
+				items={statusItems}
 				disabled={isUpdating}
 				value=""
 				onValueChange={async (status) => {

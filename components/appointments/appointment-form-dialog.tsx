@@ -82,6 +82,15 @@ export function AppointmentFormDialog({ trigger }: { trigger?: ReactElement }) {
 	}
 
 	const hasNoPets = !isLoadingPets && !pets?.length;
+	const petItems = Object.fromEntries(
+		(pets ?? []).map((pet) => [pet.id, `${pet.name} (${pet.species})`])
+	);
+	const serviceItems = Object.fromEntries(
+		(services ?? []).map((service) => [
+			service.id,
+			`${service.name} (${service.durationMinutes} min)`,
+		])
+	);
 
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
@@ -120,6 +129,7 @@ export function AppointmentFormDialog({ trigger }: { trigger?: ReactElement }) {
 								control={control}
 								render={({ field }) => (
 									<Select
+										items={petItems}
 										value={field.value}
 										onValueChange={field.onChange}
 										disabled={isLoadingPets}
@@ -146,6 +156,7 @@ export function AppointmentFormDialog({ trigger }: { trigger?: ReactElement }) {
 								control={control}
 								render={({ field }) => (
 									<Select
+										items={serviceItems}
 										value={field.value}
 										onValueChange={field.onChange}
 										disabled={isLoadingServices}
