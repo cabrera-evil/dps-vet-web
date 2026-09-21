@@ -20,16 +20,35 @@ interface IndexDefinition {
 /** Firestore only has one database per project on this plan/setup. */
 const DATABASE_ID = '(default)';
 
+/** Firestore's API silently appends this field to every composite index it returns. */
+const IMPLICIT_TRAILING_FIELD = '__name__';
+
 function fieldsMatch(
 	existing: IndexFieldDefinition[],
 	desired: IndexFieldDefinition[]
 ): boolean {
-	if (existing.length !== desired.length) return false;
-	return existing.every(
+	const comparable =
+		existing.at(-1)?.fieldPath === IMPLICIT_TRAILING_FIELD
+			? existing.slice(0, -1)
+			: existing;
+	if (comparable.length !== desired.length) return false;
+	return comparable.every(
 		(field, index) =>
 			field.fieldPath === desired[index].fieldPath &&
 			(field.order ?? null) === (desired[index].order ?? null) &&
 			(field.arrayConfig ?? null) === (desired[index].arrayConfig ?? null)
+	);
+}
+
+/** gRPC status code for ALREADY_EXISTS (google-gax numeric error codes). */
+const GRPC_ALREADY_EXISTS = 6;
+
+function isAlreadyExistsError(error: unknown): boolean {
+	return (
+		typeof error === 'object' &&
+		error !== null &&
+		'code' in error &&
+		(error as { code?: unknown }).code === GRPC_ALREADY_EXISTS
 	);
 }
 
@@ -97,16 +116,21 @@ export async function deployFirestoreIndexes(): Promise<void> {
 				process.stdout.write(
 					`  - ${collectionGroup} (${describe(definition)}): creating...\n`
 				);
-				const [operation] = await client.createIndex({
-					parent,
-					index: {
-						queryScope: definition.queryScope,
-						fields: definition.fields,
-					},
-				});
-				process.stdout.write(
-					`    started: ${operation.name} (building — check the Firebase console for ACTIVE status)\n`
-				);
+				try {
+					const [operation] = await client.createIndex({
+						parent,
+						index: {
+							queryScope: definition.queryScope,
+							fields: definition.fields,
+						},
+					});
+					process.stdout.write(
+						`    started: ${operation.name} (building — check the Firebase console for ACTIVE status)\n`
+					);
+				} catch (error) {
+					if (!isAlreadyExistsError(error)) throw error;
+					process.stdout.write('    already exists, skipping.\n');
+				}
 			}
 		}
 	} finally {
