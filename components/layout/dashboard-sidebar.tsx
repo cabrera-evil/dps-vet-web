@@ -13,6 +13,7 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import { hasPermission } from '@/utils/permission';
 import { LogOut, Stethoscope } from 'lucide-react';
 import { signOut, useSession } from 'next-auth/react';
 import Link from 'next/link';
@@ -21,6 +22,10 @@ import { usePathname } from 'next/navigation';
 export function DashboardSidebar() {
 	const pathname = usePathname();
 	const { data: session } = useSession();
+
+	const visibleNavItems = dashboardNavItems.filter((item) =>
+		hasPermission(session?.user?.permissions, item.permissions ?? [], item.mode)
+	);
 
 	return (
 		<Sidebar>
@@ -37,7 +42,7 @@ export function DashboardSidebar() {
 					<SidebarGroupLabel>Módulos</SidebarGroupLabel>
 					<SidebarGroupContent>
 						<SidebarMenu>
-							{dashboardNavItems.map((item) => {
+							{visibleNavItems.map((item) => {
 								const isActive =
 									item.href === '/dashboard'
 										? pathname === item.href

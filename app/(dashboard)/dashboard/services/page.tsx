@@ -1,6 +1,5 @@
+import { ServiceFormDialog } from '@/components/services/service-form-dialog';
 import { ServicesGrid } from '@/components/services/services-grid';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
 
 export default function DashboardServicesPage() {
 	return (
@@ -14,10 +13,7 @@ export default function DashboardServicesPage() {
 						Catálogo de servicios ofrecidos por la clínica.
 					</p>
 				</div>
-				<Button>
-					<Plus />
-					Nuevo servicio
-				</Button>
+				<ServiceFormDialog mode="create" />
 			</div>
 			<ServicesGrid />
 		</div>

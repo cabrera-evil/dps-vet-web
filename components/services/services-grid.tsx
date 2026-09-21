@@ -1,17 +1,39 @@
 'use client';
 
+import { ServiceDeleteDialog } from '@/components/services/service-delete-dialog';
+import { ServiceFormDialog } from '@/components/services/service-form-dialog';
 import { Badge } from '@/components/ui/badge';
 import {
 	Card,
 	CardContent,
 	CardDescription,
+	CardFooter,
 	CardHeader,
 	CardTitle,
 } from '@/components/ui/card';
-import { Spinner } from '@/components/ui/spinner';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useGet } from '@/hooks/use-rest';
 import { Service } from '@/types/service.type';
 import { Clock } from 'lucide-react';
+
+function ServiceCardSkeleton() {
+	return (
+		<Card>
+			<CardHeader>
+				<div className="flex items-center justify-between gap-2">
+					<Skeleton className="h-5 w-32" />
+					<Skeleton className="h-5 w-16 rounded-full" />
+				</div>
+				<Skeleton className="h-4 w-full" />
+				<Skeleton className="h-4 w-2/3" />
+			</CardHeader>
+			<CardContent className="flex items-center justify-between">
+				<Skeleton className="h-4 w-16" />
+				<Skeleton className="h-6 w-20" />
+			</CardContent>
+		</Card>
+	);
+}
 
 export function ServicesGrid() {
 	const { data: services, isLoading } = useGet<Service[]>({
@@ -21,8 +43,10 @@ export function ServicesGrid() {
 
 	if (isLoading) {
 		return (
-			<div className="flex justify-center py-6">
-				<Spinner />
+			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+				{Array.from({ length: 6 }).map((_, index) => (
+					<ServiceCardSkeleton key={index} />
+				))}
 			</div>
 		);
 	}
@@ -57,6 +81,10 @@ export function ServicesGrid() {
 							${service.price.toFixed(2)} USD
 						</span>
 					</CardContent>
+					<CardFooter className="justify-end gap-2">
+						<ServiceFormDialog mode="edit" service={service} />
+						<ServiceDeleteDialog service={service} />
+					</CardFooter>
 				</Card>
 			))}
 		</div>

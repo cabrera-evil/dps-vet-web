@@ -13,9 +13,12 @@ import {
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import {
-	NativeSelect,
-	NativeSelectOption,
-} from '@/components/ui/native-select';
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select';
 import { queryClient } from '@/constants/environment';
 import { useGet, usePost } from '@/hooks/use-rest';
 import {
@@ -26,7 +29,7 @@ import { AppointmentPet, AppointmentService } from '@/types/appointment.type';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus } from 'lucide-react';
 import { ReactElement, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
 export function AppointmentFormDialog({ trigger }: { trigger?: ReactElement }) {
@@ -44,11 +47,13 @@ export function AppointmentFormDialog({ trigger }: { trigger?: ReactElement }) {
 	const { mutateAsync: createAppointment, isPending } = usePost();
 	const {
 		register,
+		control,
 		handleSubmit,
 		reset,
 		formState: { errors },
 	} = useForm<AppointmentFormValues>({
 		resolver: zodResolver(appointmentFormSchema),
+		defaultValues: { petId: '', serviceId: '', date: '', time: '' },
 	});
 
 	async function onSubmit(values: AppointmentFormValues) {
@@ -110,40 +115,54 @@ export function AppointmentFormDialog({ trigger }: { trigger?: ReactElement }) {
 					>
 						<Field data-invalid={!!errors.petId}>
 							<FieldLabel htmlFor="petId">Mascota</FieldLabel>
-							<NativeSelect
-								id="petId"
-								disabled={isLoadingPets}
-								defaultValue=""
-								{...register('petId')}
-							>
-								<NativeSelectOption value="" disabled>
-									Selecciona una mascota
-								</NativeSelectOption>
-								{pets?.map((pet) => (
-									<NativeSelectOption key={pet.id} value={pet.id}>
-										{pet.name} ({pet.species})
-									</NativeSelectOption>
-								))}
-							</NativeSelect>
+							<Controller
+								name="petId"
+								control={control}
+								render={({ field }) => (
+									<Select
+										value={field.value}
+										onValueChange={field.onChange}
+										disabled={isLoadingPets}
+									>
+										<SelectTrigger id="petId" className="w-full">
+											<SelectValue placeholder="Selecciona una mascota" />
+										</SelectTrigger>
+										<SelectContent>
+											{pets?.map((pet) => (
+												<SelectItem key={pet.id} value={pet.id}>
+													{pet.name} ({pet.species})
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								)}
+							/>
 							<FieldError errors={errors.petId ? [errors.petId] : undefined} />
 						</Field>
 						<Field data-invalid={!!errors.serviceId}>
 							<FieldLabel htmlFor="serviceId">Servicio</FieldLabel>
-							<NativeSelect
-								id="serviceId"
-								disabled={isLoadingServices}
-								defaultValue=""
-								{...register('serviceId')}
-							>
-								<NativeSelectOption value="" disabled>
-									Selecciona un servicio
-								</NativeSelectOption>
-								{services?.map((service) => (
-									<NativeSelectOption key={service.id} value={service.id}>
-										{service.name} ({service.durationMinutes} min)
-									</NativeSelectOption>
-								))}
-							</NativeSelect>
+							<Controller
+								name="serviceId"
+								control={control}
+								render={({ field }) => (
+									<Select
+										value={field.value}
+										onValueChange={field.onChange}
+										disabled={isLoadingServices}
+									>
+										<SelectTrigger id="serviceId" className="w-full">
+											<SelectValue placeholder="Selecciona un servicio" />
+										</SelectTrigger>
+										<SelectContent>
+											{services?.map((service) => (
+												<SelectItem key={service.id} value={service.id}>
+													{service.name} ({service.durationMinutes} min)
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								)}
+							/>
 							<FieldError
 								errors={errors.serviceId ? [errors.serviceId] : undefined}
 							/>

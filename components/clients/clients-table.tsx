@@ -1,10 +1,10 @@
 'use client';
 
+import { TableSkeletonRows } from '@/components/table/table-skeleton-rows';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Spinner } from '@/components/ui/spinner';
 import {
 	Table,
 	TableBody,
@@ -70,70 +70,70 @@ export function ClientsTable() {
 						className="pl-9"
 					/>
 				</div>
-				{isLoading ? (
-					<div className="flex justify-center py-6">
-						<Spinner />
-					</div>
-				) : (
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>Tutor</TableHead>
-								<TableHead>Contacto</TableHead>
-								<TableHead>Mascotas</TableHead>
-								<TableHead>Cliente desde</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{filtered.map((client) => (
-								<TableRow key={client.id}>
-									<TableCell>
-										<div className="flex items-center gap-2">
-											<Avatar className="size-8">
-												<AvatarFallback>
-													{client.name.slice(0, 2).toUpperCase()}
-												</AvatarFallback>
-											</Avatar>
-											<span className="font-medium">{client.name}</span>
-										</div>
-									</TableCell>
-									<TableCell>
-										<div className="flex flex-col text-sm">
-											<span>{client.email}</span>
-											<span className="text-muted-foreground">
-												{client.phone}
-											</span>
-										</div>
-									</TableCell>
-									<TableCell>
-										<div className="flex flex-wrap gap-1">
-											{client.petNames.map((petName) => (
-												<Badge key={petName} variant="outline">
-													{petName}
-												</Badge>
-											))}
-										</div>
-									</TableCell>
-									<TableCell>
-										{new Date(client.createdAt).toLocaleDateString('es-SV', {
-											dateStyle: 'medium',
-										})}
-									</TableCell>
-								</TableRow>
-							))}
-							{filtered.length === 0 && (
-								<TableRow>
-									<TableCell
-										colSpan={4}
-										className="text-center text-sm text-muted-foreground"
-									>
-										No se encontraron tutores.
-									</TableCell>
-								</TableRow>
-							)}
-						</TableBody>
-					</Table>
-				)}
+				<Table>
+					<TableHeader>
+						<TableRow>
+							<TableHead>Tutor</TableHead>
+							<TableHead>Contacto</TableHead>
+							<TableHead>Mascotas</TableHead>
+							<TableHead>Cliente desde</TableHead>
+						</TableRow>
+					</TableHeader>
+					<TableBody>
+						{isLoading ? (
+							<TableSkeletonRows columnCount={4} />
+						) : (
+							<>
+								{filtered.map((client) => (
+									<TableRow key={client.id}>
+										<TableCell>
+											<div className="flex items-center gap-2">
+												<Avatar className="size-8">
+													<AvatarFallback>
+														{client.name.slice(0, 2).toUpperCase()}
+													</AvatarFallback>
+												</Avatar>
+												<span className="font-medium">{client.name}</span>
+											</div>
+										</TableCell>
+										<TableCell>
+											<div className="flex flex-col text-sm">
+												<span>{client.email}</span>
+												<span className="text-muted-foreground">
+													{client.phone}
+												</span>
+											</div>
+										</TableCell>
+										<TableCell>
+											<div className="flex flex-wrap gap-1">
+												{client.petNames.map((petName) => (
+													<Badge key={petName} variant="outline">
+														{petName}
+													</Badge>
+												))}
+											</div>
+										</TableCell>
+										<TableCell>
+											{new Date(client.createdAt).toLocaleDateString('es-SV', {
+												dateStyle: 'medium',
+											})}
+										</TableCell>
+									</TableRow>
+								))}
+								{filtered.length === 0 && (
+									<TableRow>
+										<TableCell
+											colSpan={4}
+											className="text-center text-sm text-muted-foreground"
+										>
+											No se encontraron tutores.
+										</TableCell>
+									</TableRow>
+								)}
+							</>
+						)}
+					</TableBody>
+				</Table>
 			</CardContent>
 		</Card>
 	);

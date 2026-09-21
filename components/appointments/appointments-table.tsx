@@ -1,15 +1,18 @@
 'use client';
 
 import { AppointmentStatusBadge } from '@/components/appointments/appointment-status-badge';
+import { TableSkeletonRows } from '@/components/table/table-skeleton-rows';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
-	NativeSelect,
-	NativeSelectOption,
-} from '@/components/ui/native-select';
-import { Spinner } from '@/components/ui/spinner';
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select';
 import {
 	Table,
 	TableBody,
@@ -75,12 +78,10 @@ function AppointmentActions({ appointment }: { appointment: Appointment }) {
 		const transitions = ALLOWED_TRANSITIONS[appointment.status];
 		if (!transitions.length) return null;
 		return (
-			<NativeSelect
-				size="sm"
+			<Select
 				disabled={isUpdating}
 				value=""
-				onChange={async (event) => {
-					const status = event.target.value as AppointmentStatus;
+				onValueChange={async (status) => {
 					if (!status) return;
 					try {
 						await updateStatus({
@@ -93,15 +94,17 @@ function AppointmentActions({ appointment }: { appointment: Appointment }) {
 					}
 				}}
 			>
-				<NativeSelectOption value="" disabled>
-					Cambiar estado
-				</NativeSelectOption>
-				{transitions.map((status) => (
-					<NativeSelectOption key={status} value={status}>
-						{STATUS_LABEL[status]}
-					</NativeSelectOption>
-				))}
-			</NativeSelect>
+				<SelectTrigger size="sm">
+					<SelectValue placeholder="Cambiar estado" />
+				</SelectTrigger>
+				<SelectContent>
+					{transitions.map((status) => (
+						<SelectItem key={status} value={status}>
+							{STATUS_LABEL[status]}
+						</SelectItem>
+					))}
+				</SelectContent>
+			</Select>
 		);
 	}
 
@@ -262,9 +265,22 @@ export function AppointmentsTable() {
 				</div>
 
 				{isLoading ? (
-					<div className="flex justify-center py-6">
-						<Spinner />
-					</div>
+					<Table>
+						<TableHeader>
+							<TableRow>
+								<TableHead>Paciente</TableHead>
+								<TableHead>Tutor</TableHead>
+								<TableHead>Servicio</TableHead>
+								<TableHead>Personal</TableHead>
+								<TableHead>Fecha y hora</TableHead>
+								<TableHead>Estado</TableHead>
+								<TableHead className="text-right">Acciones</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody>
+							<TableSkeletonRows columnCount={7} />
+						</TableBody>
+					</Table>
 				) : (
 					<>
 						<AppointmentsBlock

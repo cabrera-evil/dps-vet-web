@@ -1,8 +1,8 @@
 'use client';
 
 import { AppointmentStatusBadge } from '@/components/appointments/appointment-status-badge';
+import { TableSkeletonRows } from '@/components/table/table-skeleton-rows';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Spinner } from '@/components/ui/spinner';
 import {
 	Table,
 	TableBody,
@@ -47,53 +47,55 @@ export function DashboardUpcomingAppointments() {
 				<CardTitle>Próximas citas</CardTitle>
 			</CardHeader>
 			<CardContent>
-				{isLoading ? (
-					<div className="flex justify-center py-6">
-						<Spinner />
-					</div>
-				) : (
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>Paciente</TableHead>
-								<TableHead>Tutor</TableHead>
-								<TableHead>Servicio</TableHead>
-								<TableHead>Hora</TableHead>
-								<TableHead className="text-right">Estado</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{upcoming.map((appointment) => (
-								<TableRow key={appointment.id}>
-									<TableCell className="font-medium">
-										{getPetName(appointment.petId)}
-									</TableCell>
-									<TableCell>{getUserName(appointment.clientId)}</TableCell>
-									<TableCell>{getServiceName(appointment.serviceId)}</TableCell>
-									<TableCell className="tabular-nums">
-										{new Date(appointment.start).toLocaleTimeString('es-SV', {
-											hour: '2-digit',
-											minute: '2-digit',
-										})}
-									</TableCell>
-									<TableCell className="text-right">
-										<AppointmentStatusBadge status={appointment.status} />
-									</TableCell>
-								</TableRow>
-							))}
-							{upcoming.length === 0 && (
-								<TableRow>
-									<TableCell
-										colSpan={5}
-										className="text-center text-sm text-muted-foreground"
-									>
-										No hay citas próximas.
-									</TableCell>
-								</TableRow>
-							)}
-						</TableBody>
-					</Table>
-				)}
+				<Table>
+					<TableHeader>
+						<TableRow>
+							<TableHead>Paciente</TableHead>
+							<TableHead>Tutor</TableHead>
+							<TableHead>Servicio</TableHead>
+							<TableHead>Hora</TableHead>
+							<TableHead className="text-right">Estado</TableHead>
+						</TableRow>
+					</TableHeader>
+					<TableBody>
+						{isLoading ? (
+							<TableSkeletonRows columnCount={5} />
+						) : (
+							<>
+								{upcoming.map((appointment) => (
+									<TableRow key={appointment.id}>
+										<TableCell className="font-medium">
+											{getPetName(appointment.petId)}
+										</TableCell>
+										<TableCell>{getUserName(appointment.clientId)}</TableCell>
+										<TableCell>
+											{getServiceName(appointment.serviceId)}
+										</TableCell>
+										<TableCell className="tabular-nums">
+											{new Date(appointment.start).toLocaleTimeString('es-SV', {
+												hour: '2-digit',
+												minute: '2-digit',
+											})}
+										</TableCell>
+										<TableCell className="text-right">
+											<AppointmentStatusBadge status={appointment.status} />
+										</TableCell>
+									</TableRow>
+								))}
+								{upcoming.length === 0 && (
+									<TableRow>
+										<TableCell
+											colSpan={5}
+											className="text-center text-sm text-muted-foreground"
+										>
+											No hay citas próximas.
+										</TableCell>
+									</TableRow>
+								)}
+							</>
+						)}
+					</TableBody>
+				</Table>
 			</CardContent>
 		</Card>
 	);
