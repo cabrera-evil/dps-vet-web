@@ -1,4 +1,5 @@
 import { LandingNav } from '@/components/landing/landing-nav';
+import { ThemeToggle } from '@/components/layout/theme-toggle';
 import { Button } from '@/components/ui/button';
 import {
 	CalendarDays,
@@ -78,6 +79,7 @@ export function LandingHeader() {
 					<LandingNav links={NAV_LINKS} />
 
 					<div className="flex shrink-0 items-center gap-2 sm:gap-3">
+						<ThemeToggle />
 						<Link
 							className="hidden items-center gap-1.5 rounded-lg border bg-muted px-3.5 py-2 text-xs font-semibold transition-colors hover:bg-muted/70 hover:text-primary sm:inline-flex"
 							href="/dashboard"

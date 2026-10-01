@@ -1,6 +1,7 @@
 'use client';
 
 import { dashboardNavItems } from '@/components/layout/dashboard-nav-items';
+import { ThemeToggle } from '@/components/layout/theme-toggle';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
@@ -20,6 +21,7 @@ export function DashboardTopbar() {
 			<h1 className="font-heading text-sm font-semibold">
 				{current?.title ?? 'Dashboard'}
 			</h1>
+			<ThemeToggle className="ml-auto" />
 		</header>
 	);
 }

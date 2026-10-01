@@ -45,7 +45,7 @@ export default function RootLayout({
 			suppressHydrationWarning
 			className={cn('scroll-smooth font-sans', geist.variable)}
 		>
-			<body className="dark">
+			<body>
 				<Providers>{children}</Providers>
 			</body>
 		</html>
