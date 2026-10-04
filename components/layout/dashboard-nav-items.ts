@@ -4,6 +4,7 @@ import {
 	LayoutDashboard,
 	PawPrint,
 	Pill,
+	Settings,
 	Stethoscope,
 	Users,
 	type LucideIcon,
@@ -37,6 +38,7 @@ export const dashboardNavItems: DashboardNavItem[] = [
 		title: 'Servicios Clínicos',
 		href: '/dashboard/services',
 		icon: Stethoscope,
+		permissions: [Permission.SERVICES_WRITE],
 	},
 	{
 		title: 'Clientes y Tutores',
@@ -48,5 +50,12 @@ export const dashboardNavItems: DashboardNavItem[] = [
 		title: 'Inventario y Medicamentos',
 		href: '/dashboard/inventory',
 		icon: Pill,
+		permissions: [Permission.MEDICATIONS_WRITE],
+	},
+	{
+		title: 'Configuración',
+		href: '/dashboard/settings',
+		icon: Settings,
+		permissions: [Permission.USERS_UPDATE],
 	},
 ];

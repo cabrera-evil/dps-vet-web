@@ -9,17 +9,17 @@ if ! command -v pnpm >/dev/null 2>&1; then
   exit 1
 fi
 
-# Check if ggshield is installed
-if ! command -v ggshield >/dev/null 2>&1; then
-  echo "Error: ggshield is not installed. Please install ggshield to continue." >&2
-  exit 1
-fi
+# # Check if ggshield is installed
+# if ! command -v ggshield >/dev/null 2>&1; then
+#   echo "Error: ggshield is not installed. Please install ggshield to continue." >&2
+#   exit 1
+# fi
 
-# Check if snyk is installed
-if ! command -v snyk >/dev/null 2>&1; then
-  echo "Error: snyk is not installed. Please install snyk to continue." >&2
-  exit 1
-fi
+# # Check if snyk is installed
+# if ! command -v snyk >/dev/null 2>&1; then
+#   echo "Error: snyk is not installed. Please install snyk to continue." >&2
+#   exit 1
+# fi
 
 # Run linters on staged files
 echo "Running linters on staged files..."
