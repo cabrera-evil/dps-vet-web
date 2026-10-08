@@ -16,14 +16,15 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { queryClient } from '@/constants/environment';
 import { Permission } from '@/constants/permission';
-import { usePost } from '@/hooks/use-rest';
+import { usePatch, usePost } from '@/hooks/use-rest';
 import {
 	MedicationFormValues,
 	medicationFormSchema,
 } from '@/schemas/medication.schema';
+import { Medication } from '@/types/medication.type';
 import { hasPermission } from '@/utils/permission';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Plus } from 'lucide-react';
+import { Pencil, Plus } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -37,11 +38,16 @@ const DEFAULT_VALUES: MedicationFormValues = {
 	active: true,
 };
 
-/** Gated on `MEDICATIONS_WRITE`, matching the permission on `POST /api/medications`. */
-export function MedicationFormDialog() {
+type MedicationFormDialogProps =
+	| { mode: 'create'; medication?: never }
+	| { mode: 'edit'; medication: Medication };
+
+export function MedicationFormDialog(props: MedicationFormDialogProps) {
+	const { mode } = props;
 	const { data: session } = useSession();
 	const [open, setOpen] = useState(false);
-	const { mutateAsync: createMedication, isPending } = usePost();
+	const { mutateAsync: createMedication, isPending: isCreating } = usePost();
+	const { mutateAsync: updateMedication, isPending: isUpdating } = usePatch();
 	const {
 		register,
 		control,
@@ -59,37 +65,74 @@ export function MedicationFormDialog() {
 	if (!canWrite) return null;
 
 	function handleOpenChange(nextOpen: boolean) {
-		if (nextOpen) reset(DEFAULT_VALUES);
+		if (nextOpen) {
+			reset(
+				mode === 'edit'
+					? {
+							name: props.medication.name,
+							description: props.medication.description,
+							stock: props.medication.stock,
+							price: props.medication.price,
+							active: props.medication.active,
+						}
+					: DEFAULT_VALUES
+			);
+		}
 		setOpen(nextOpen);
 	}
 
 	async function onSubmit(values: MedicationFormValues) {
 		try {
-			await createMedication({ path: '/medications', payload: values });
+			if (mode === 'edit') {
+				await updateMedication({
+					path: `/medications/${props.medication.id}`,
+					payload: values,
+				});
+			} else {
+				await createMedication({ path: '/medications', payload: values });
+			}
 		} catch {
 			return;
 		}
 
 		await queryClient.invalidateQueries({ queryKey: ['/medications'] });
-		toast.success('Medicamento creado');
+		toast.success(
+			mode === 'edit' ? 'Medicamento actualizado' : 'Medicamento creado'
+		);
 		setOpen(false);
 	}
+
+	const isPending = isCreating || isUpdating;
 
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
 			<DialogTrigger
 				render={
-					<Button>
-						<Plus />
-						Nuevo medicamento
-					</Button>
+					mode === 'edit' ? (
+						<Button
+							size="icon"
+							variant="outline"
+							aria-label="Editar medicamento"
+						>
+							<Pencil />
+						</Button>
+					) : (
+						<Button>
+							<Plus />
+							Nuevo medicamento
+						</Button>
+					)
 				}
 			/>
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle>Nuevo medicamento</DialogTitle>
+					<DialogTitle>
+						{mode === 'edit' ? 'Editar medicamento' : 'Nuevo medicamento'}
+					</DialogTitle>
 					<DialogDescription>
-						Agrega un medicamento al inventario de la clínica.
+						{mode === 'edit'
+							? 'Actualiza los datos del medicamento.'
+							: 'Agrega un medicamento al inventario de la clínica.'}
 					</DialogDescription>
 				</DialogHeader>
 				<form
@@ -150,7 +193,7 @@ export function MedicationFormDialog() {
 				</form>
 				<DialogFooter>
 					<Button type="submit" form="medication-form" disabled={isPending}>
-						Crear medicamento
+						{mode === 'edit' ? 'Guardar cambios' : 'Crear medicamento'}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

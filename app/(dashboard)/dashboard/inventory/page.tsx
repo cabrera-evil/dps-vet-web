@@ -13,7 +13,7 @@ export default function DashboardInventoryPage() {
 						Control de existencias de medicamentos e insumos.
 					</p>
 				</div>
-				<MedicationFormDialog />
+				<MedicationFormDialog mode="create" />
 			</div>
 			<InventoryTable />
 		</div>
