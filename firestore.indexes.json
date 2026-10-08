@@ -67,6 +67,14 @@
 			]
 		},
 		{
+			"collectionGroup": "medications",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "active", "order": "ASCENDING" },
+				{ "fieldPath": "stock", "order": "ASCENDING" }
+			]
+		},
+		{
 			"collectionGroup": "medical-records",
 			"queryScope": "COLLECTION",
 			"fields": [
