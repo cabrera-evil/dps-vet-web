@@ -45,14 +45,16 @@ export class ReportService {
 			APPOINTMENT_STATUS_VALUES.map((status) => [status, 0])
 		) as Record<AppointmentStatus, number>;
 		const byDay: Record<string, number> = {};
+		let total = 0;
 
 		for (const appointment of appointments) {
 			byStatus[appointment.status] += 1;
+			if (appointment.status !== AppointmentStatus.CANCELLED) total += 1;
 			const day = appointment.start.slice(0, 10);
 			byDay[day] = (byDay[day] ?? 0) + 1;
 		}
 
-		return { byStatus, byDay };
+		return { total, byStatus, byDay };
 	}
 
 	async popularServices(
