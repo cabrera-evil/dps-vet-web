@@ -1,5 +1,4 @@
 import {
-	CalendarClock,
 	DollarSign,
 	PawPrint,
 	TriangleAlert,
@@ -14,12 +13,6 @@ export interface DashboardStat {
 }
 
 export const dashboardStats: DashboardStat[] = [
-	{
-		label: 'Citas hoy',
-		value: '12',
-		description: '3 pendientes de confirmar',
-		icon: CalendarClock,
-	},
 	{
 		label: 'Pacientes activos',
 		value: '248',
