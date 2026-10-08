@@ -1,16 +1,5 @@
-import {
-	DollarSign,
-	PawPrint,
-	TriangleAlert,
-	type LucideIcon,
-} from 'lucide-react';
-
-export interface DashboardStat {
-	label: string;
-	value: string;
-	description: string;
-	icon: LucideIcon;
-}
+import type { DashboardStat } from '@/components/dashboard/dashboard-stat-card';
+import { DollarSign, PawPrint, TriangleAlert } from 'lucide-react';
 
 export const dashboardStats: DashboardStat[] = [
 	{
@@ -26,9 +15,9 @@ export const dashboardStats: DashboardStat[] = [
 		icon: TriangleAlert,
 	},
 	{
-		label: 'Ingresos del día',
-		value: '$420.00 USD',
-		description: '18 servicios facturados',
+		label: 'Consulas y Procedimientos',
+		value: '1',
+		description: 'Consultas y procedimientos realizados este mes',
 		icon: DollarSign,
 	},
 ];
