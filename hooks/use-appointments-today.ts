@@ -1,17 +1,12 @@
 import type { AppointmentsReport } from '@/app/api/reports/report.types';
 import { AppointmentStatus } from '@/constants/enum';
-import { Permission } from '@/constants/permission';
+import { useCanReadReports } from '@/hooks/use-can-read-reports';
 import { useGet } from '@/hooks/use-rest';
-import { hasPermission } from '@/utils/permission';
 import { endOfDay, startOfDay } from 'date-fns';
-import { useSession } from 'next-auth/react';
 import { useMemo } from 'react';
 
 export function useAppointmentsToday() {
-	const { data: session } = useSession();
-	const canReadReports = hasPermission(session?.user?.permissions, [
-		Permission.REPORTS_READ,
-	]);
+	const canReadReports = useCanReadReports();
 
 	const params = useMemo(() => {
 		const now = new Date();

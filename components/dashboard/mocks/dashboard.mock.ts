@@ -1,5 +1,5 @@
 import type { DashboardStat } from '@/components/dashboard/dashboard-stat-card';
-import { DollarSign, PawPrint, TriangleAlert } from 'lucide-react';
+import { DollarSign, PawPrint } from 'lucide-react';
 
 export const dashboardStats: DashboardStat[] = [
 	{
@@ -9,29 +9,11 @@ export const dashboardStats: DashboardStat[] = [
 		icon: PawPrint,
 	},
 	{
-		label: 'Medicamentos con bajo stock',
-		value: '5',
-		description: 'Requieren reabastecimiento',
-		icon: TriangleAlert,
-	},
-	{
 		label: 'Consulas y Procedimientos',
 		value: '1',
 		description: 'Consultas y procedimientos realizados este mes',
 		icon: DollarSign,
 	},
-];
-
-export interface DashboardLowStockMedication {
-	id: string;
-	name: string;
-	stock: number;
-}
-
-export const dashboardLowStockMedications: DashboardLowStockMedication[] = [
-	{ id: 'med-1', name: 'Amoxicilina 250mg', stock: 4 },
-	{ id: 'med-2', name: 'Meloxicam inyectable', stock: 2 },
-	{ id: 'med-3', name: 'Suero fisiológico 500ml', stock: 6 },
 ];
 
 export interface DashboardStaffOnDuty {
