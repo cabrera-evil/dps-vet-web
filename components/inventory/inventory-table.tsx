@@ -1,7 +1,6 @@
-import {
-	LOW_STOCK_THRESHOLD,
-	medicationsMock,
-} from '@/components/inventory/mocks/inventory.mock';
+'use client';
+
+import { TableSkeletonRows } from '@/components/table/table-skeleton-rows';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -12,8 +11,17 @@ import {
 	TableHeader,
 	TableRow,
 } from '@/components/ui/table';
+import { useGet } from '@/hooks/use-rest';
+import { Medication } from '@/types/medication.type';
+
+const COLUMN_COUNT = 5;
 
 export function InventoryTable() {
+	const { data: medications, isLoading } = useGet<Medication[]>({
+		path: '/medications',
+		params: { pageSize: 100 },
+	});
+
 	return (
 		<Card>
 			<CardContent>
@@ -28,29 +36,45 @@ export function InventoryTable() {
 						</TableRow>
 					</TableHeader>
 					<TableBody>
-						{medicationsMock.map((medication) => (
-							<TableRow key={medication.id}>
-								<TableCell className="font-medium">{medication.name}</TableCell>
-								<TableCell className="text-muted-foreground">
-									{medication.description}
-								</TableCell>
-								<TableCell className="text-right tabular-nums">
-									{medication.stock}
-								</TableCell>
-								<TableCell className="text-right tabular-nums">
-									${medication.price.toFixed(2)} USD
-								</TableCell>
-								<TableCell className="text-right">
-									{!medication.active ? (
-										<Badge variant="secondary">Inactivo</Badge>
-									) : medication.stock <= LOW_STOCK_THRESHOLD ? (
-										<Badge variant="destructive">Stock bajo</Badge>
-									) : (
-										<Badge variant="default">Disponible</Badge>
-									)}
-								</TableCell>
-							</TableRow>
-						))}
+						{isLoading ? (
+							<TableSkeletonRows columnCount={COLUMN_COUNT} />
+						) : (
+							<>
+								{(medications ?? []).map((medication) => (
+									<TableRow key={medication.id}>
+										<TableCell className="font-medium">
+											{medication.name}
+										</TableCell>
+										<TableCell className="text-muted-foreground">
+											{medication.description}
+										</TableCell>
+										<TableCell className="text-right tabular-nums">
+											{medication.stock}
+										</TableCell>
+										<TableCell className="text-right tabular-nums">
+											${medication.price.toFixed(2)} USD
+										</TableCell>
+										<TableCell className="text-right">
+											<Badge
+												variant={medication.active ? 'default' : 'secondary'}
+											>
+												{medication.active ? 'Disponible' : 'Inactivo'}
+											</Badge>
+										</TableCell>
+									</TableRow>
+								))}
+								{!medications?.length && (
+									<TableRow>
+										<TableCell
+											colSpan={COLUMN_COUNT}
+											className="text-center text-sm text-muted-foreground"
+										>
+											No hay medicamentos registrados.
+										</TableCell>
+									</TableRow>
+								)}
+							</>
+						)}
 					</TableBody>
 				</Table>
 			</CardContent>

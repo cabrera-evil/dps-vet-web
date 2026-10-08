@@ -1,6 +1,5 @@
 import { InventoryTable } from '@/components/inventory/inventory-table';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { MedicationFormDialog } from '@/components/inventory/medication-form-dialog';
 
 export default function DashboardInventoryPage() {
 	return (
@@ -14,10 +13,7 @@ export default function DashboardInventoryPage() {
 						Control de existencias de medicamentos e insumos.
 					</p>
 				</div>
-				<Button>
-					<Plus />
-					Nuevo medicamento
-				</Button>
+				<MedicationFormDialog />
 			</div>
 			<InventoryTable />
 		</div>
