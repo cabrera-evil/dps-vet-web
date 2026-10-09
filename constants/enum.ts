@@ -102,3 +102,20 @@ export enum ClinicalAlertType {
 	ADVERSE_REACTION = 'ADVERSE_REACTION',
 	CHRONIC_CONDITION = 'CHRONIC_CONDITION',
 }
+
+export enum ClinicalEncounterType {
+	CONSULTATION = 'CONSULTATION',
+}
+
+export enum ClinicalMeasurementType {
+	WEIGHT = 'WEIGHT',
+	TEMPERATURE = 'TEMPERATURE',
+	HEART_RATE = 'HEART_RATE',
+	RESPIRATORY_RATE = 'RESPIRATORY_RATE',
+}
+
+export enum FollowUpStatus {
+	PENDING = 'PENDING',
+	COMPLETED = 'COMPLETED',
+	CANCELLED = 'CANCELLED',
+}
