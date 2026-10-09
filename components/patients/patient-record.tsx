@@ -5,7 +5,7 @@ import { MedicalHistoryTab } from '@/components/medical-histories/medical-histor
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RECORD_TABS } from '@/constants/clinical';
-import { ConsultationStatus } from '@/constants/enum';
+import { ConsultationStatus, PetSex } from '@/constants/enum';
 import { Permission } from '@/constants/permission';
 import { usePreviewScenario } from '@/hooks/use-preview-scenario';
 import type { MedicalHistoryFormValues } from '@/schemas/medical-history.schema';
@@ -91,6 +91,7 @@ export function PatientRecord({ patientId }: { patientId: string }) {
 	function saveGeneralData(values: PatientGeneralDataFormValues) {
 		setPatientOverrides({
 			...values,
+			sex: values.sex as PetSex,
 			color: values.color || undefined,
 			markings: values.markings || undefined,
 			microchip: values.microchip || undefined,

@@ -45,10 +45,18 @@ export function PatientGeneralDataTab({
 							{ label: 'Número de expediente', value: patient.recordNumber },
 							{ label: 'Especie', value: patient.species },
 							{ label: 'Raza', value: patient.breed },
-							{ label: 'Sexo', value: PET_SEX_LABEL[patient.sex] },
+							{
+								label: 'Sexo',
+								value: patient.sex && PET_SEX_LABEL[patient.sex],
+							},
 							{
 								label: 'Esterilizado / castrado',
-								value: patient.sterilized ? 'Sí' : 'No',
+								value:
+									patient.sterilized === undefined
+										? undefined
+										: patient.sterilized
+											? 'Sí'
+											: 'No',
 							},
 							{
 								label: 'Fecha de nacimiento',

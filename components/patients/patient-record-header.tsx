@@ -75,8 +75,13 @@ export function PatientRecordHeader({
 								</Badge>
 							</div>
 							<p className="text-sm text-muted-foreground">
-								{patient.species} · {patient.breed} ·{' '}
-								{PET_SEX_LABEL[patient.sex]}
+								{[
+									patient.species,
+									patient.breed,
+									patient.sex && PET_SEX_LABEL[patient.sex],
+								]
+									.filter(Boolean)
+									.join(' · ')}
 							</p>
 						</div>
 						<dl className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
