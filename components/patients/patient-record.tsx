@@ -2,6 +2,7 @@
 
 import { ConsultationsTab } from '@/components/consultations/consultations-tab';
 import { MedicalHistoryTab } from '@/components/medical-histories/medical-history-tab';
+import { TreatmentsTab } from '@/components/treatments/treatments-tab';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RECORD_TABS } from '@/constants/clinical';
@@ -101,7 +102,7 @@ export function PatientRecord({ patientId }: { patientId: string }) {
 					<TabsTrigger value="examenes" disabled className="flex-none px-3">
 						Exámenes
 					</TabsTrigger>
-					<TabsTrigger value="tratamientos" disabled className="flex-none px-3">
+					<TabsTrigger value="tratamientos" className="flex-none px-3">
 						Tratamientos
 					</TabsTrigger>
 					<TabsTrigger value="vacunas" disabled className="flex-none px-3">
@@ -117,6 +118,7 @@ export function PatientRecord({ patientId }: { patientId: string }) {
 				<TabsContent value="resumen" className="pt-4">
 					<PatientSummaryTab
 						patientId={patientId}
+						patientName={patient.name}
 						summary={summary}
 						histories={histories}
 						lastConsultation={lastConsultation}
@@ -128,6 +130,13 @@ export function PatientRecord({ patientId }: { patientId: string }) {
 					<ConsultationsTab
 						patientId={patientId}
 						consultations={consultations}
+						canWrite={canWrite}
+					/>
+				</TabsContent>
+				<TabsContent value="tratamientos" className="pt-4">
+					<TreatmentsTab
+						petId={patientId}
+						petName={patient.name}
 						canWrite={canWrite}
 					/>
 				</TabsContent>

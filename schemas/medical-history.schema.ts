@@ -1,6 +1,8 @@
 import { MedicalHistoryStatus, MedicalHistoryType } from '@/constants/enum';
 import { z } from 'zod';
 
+export const MEDICAL_HISTORY_NAME_MAX_LENGTH = 120;
+
 export const medicalHistoryFormSchema = z
 	.object({
 		type: z.nativeEnum(MedicalHistoryType, {
@@ -10,7 +12,9 @@ export const medicalHistoryFormSchema = z
 			.string()
 			.trim()
 			.min(2, { message: 'Ingresa al menos 2 caracteres' })
-			.max(120, { message: 'Máximo 120 caracteres' }),
+			.max(MEDICAL_HISTORY_NAME_MAX_LENGTH, {
+				message: `Máximo ${MEDICAL_HISTORY_NAME_MAX_LENGTH} caracteres`,
+			}),
 		approximateDate: z
 			.string()
 			.refine((value) => !value || new Date(value) <= new Date(), {

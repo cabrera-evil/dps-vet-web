@@ -31,7 +31,7 @@ import {
 import type { MedicalHistoryEntry } from '@/types/medical-history.type';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Pencil, Plus } from 'lucide-react';
-import { useState } from 'react';
+import { ReactElement, useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 
@@ -46,8 +46,20 @@ const DEFAULT_VALUES: MedicalHistoryFormValues = {
 };
 
 type MedicalHistoryFormDialogProps =
-	| { mode: 'create'; petId: string; entry?: never }
-	| { mode: 'edit'; petId: string; entry: MedicalHistoryEntry };
+	| {
+			mode: 'create';
+			petId: string;
+			entry?: never;
+			trigger?: ReactElement;
+			initialValues?: Partial<MedicalHistoryFormValues>;
+	  }
+	| {
+			mode: 'edit';
+			petId: string;
+			entry: MedicalHistoryEntry;
+			trigger?: never;
+			initialValues?: never;
+	  };
 
 export function MedicalHistoryFormDialog(props: MedicalHistoryFormDialogProps) {
 	const { mode, petId } = props;
@@ -79,7 +91,7 @@ export function MedicalHistoryFormDialog(props: MedicalHistoryFormDialogProps) {
 							isAlert: props.entry.isAlert,
 							alertType: props.entry.alertType ?? '',
 						}
-					: DEFAULT_VALUES
+					: { ...DEFAULT_VALUES, ...props.initialValues }
 			);
 		}
 		setOpen(nextOpen);
@@ -124,7 +136,8 @@ export function MedicalHistoryFormDialog(props: MedicalHistoryFormDialogProps) {
 		<Dialog open={open} onOpenChange={handleOpenChange}>
 			<DialogTrigger
 				render={
-					mode === 'edit' ? (
+					props.trigger ??
+					(mode === 'edit' ? (
 						<Button
 							size="icon-sm"
 							variant="ghost"
@@ -137,7 +150,7 @@ export function MedicalHistoryFormDialog(props: MedicalHistoryFormDialogProps) {
 							<Plus />
 							Agregar antecedente
 						</Button>
-					)
+					))
 				}
 			/>
 			<DialogContent>

@@ -16,7 +16,7 @@ export interface SelectOption {
 	label: string;
 }
 
-const toOptions = (labels: Record<string, string>): SelectOption[] =>
+export const toOptions = (labels: Record<string, string>): SelectOption[] =>
 	Object.entries(labels).map(([value, label]) => ({ value, label }));
 
 export const RECORD_TABS = [

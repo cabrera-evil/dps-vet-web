@@ -129,3 +129,10 @@
 		@apply font-sans;
 	}
 }
+
+@media print {
+	[data-slot='sidebar-wrapper'] > :not([data-slot='sidebar-inset']),
+	[data-slot='sidebar-inset'] > header {
+		display: none;
+	}
+}

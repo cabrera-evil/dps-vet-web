@@ -55,6 +55,7 @@ export function buildConsultationFormValues(
 		requiresFollowUp: !!consultation?.followUp,
 		followUpDate: consultation?.followUp?.recommendedDate ?? '',
 		followUpReason: consultation?.followUp?.reason ?? '',
+		treatments: [],
 	};
 }
 

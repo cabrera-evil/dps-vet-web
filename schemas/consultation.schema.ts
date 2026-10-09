@@ -1,6 +1,10 @@
 import { DiagnosisStatus, DiagnosisType } from '@/constants/enum';
 import { z } from 'zod';
 import { optionalNumber } from './optional-number';
+import {
+	treatmentFormSchema,
+	type TreatmentFormValues,
+} from './treatment.schema';
 
 export const diagnosisFormSchema = z.object({
 	name: z.string().trim().max(160, { message: 'Máximo 160 caracteres' }),
@@ -43,6 +47,8 @@ export const consultationDraftSchema = z.object({
 	requiresFollowUp: z.boolean(),
 	followUpDate: z.string(),
 	followUpReason: z.string().max(300, { message: 'Máximo 300 caracteres' }),
+	// Drafts keep incomplete plans; each one is validated on finalize.
+	treatments: z.array(z.custom<TreatmentFormValues>()),
 });
 
 export const consultationFinalizeSchema = consultationDraftSchema.superRefine(
@@ -76,6 +82,14 @@ export const consultationFinalizeSchema = consultationDraftSchema.superRefine(
 			!values.mucousMembranesOther.trim()
 		)
 			required(['mucousMembranesOther'], 'Describe las mucosas');
+
+		values.treatments.forEach((treatment, index) => {
+			const result = treatmentFormSchema.safeParse(treatment);
+			if (result.success) return;
+			result.error.issues.forEach((issue) =>
+				required(['treatments', index, ...issue.path], issue.message)
+			);
+		});
 
 		if (values.requiresFollowUp) {
 			if (!values.followUpDate)

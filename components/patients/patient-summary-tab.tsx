@@ -1,3 +1,5 @@
+import { ActiveTreatmentsBlock } from '@/components/treatments/active-treatments-block';
+import { PendingTodayCard } from '@/components/treatments/pending-today-card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,6 +16,7 @@ import {
 	CLINICAL_ALERT_LABEL,
 	MEDICAL_HISTORY_STATUS_LABEL,
 } from '@/constants/clinical';
+import { useTreatmentPlans } from '@/hooks/use-treatments';
 import type { ConsultationListItem } from '@/types/consultation.type';
 import type { MedicalHistoryEntry } from '@/types/medical-history.type';
 import type { PatientClinicalSummary } from '@/types/patient-record.type';
@@ -21,7 +24,6 @@ import { getConsultationKindLabel } from '@/utils/consultation';
 import { formatDate } from '@/utils/date';
 import {
 	CalendarClock,
-	Pill,
 	Scale,
 	TrendingDown,
 	TrendingUp,
@@ -32,6 +34,7 @@ import type { ReactNode } from 'react';
 
 interface PatientSummaryTabProps {
 	patientId: string;
+	patientName: string;
 	summary: PatientClinicalSummary;
 	histories: MedicalHistoryEntry[];
 	lastConsultation?: ConsultationListItem;
@@ -99,6 +102,7 @@ function WeightBlock({
 
 export function PatientSummaryTab({
 	patientId,
+	patientName,
 	summary,
 	histories,
 	lastConsultation,
@@ -106,6 +110,10 @@ export function PatientSummaryTab({
 	onGoToTab,
 }: PatientSummaryTabProps) {
 	const relevantHistories = histories.filter((entry) => entry.isAlert);
+	const { data: plans } = useTreatmentPlans(patientId);
+	const followUpHasPlan = !!plans?.some(
+		(plan) => plan.followUp?.id === summary.nextFollowUp?.id
+	);
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -124,6 +132,12 @@ export function PatientSummaryTab({
 					))}
 				</div>
 			)}
+
+			<PendingTodayCard
+				petId={patientId}
+				petName={patientName}
+				canWrite={canWrite}
+			/>
 
 			<div className="grid items-start gap-4 lg:grid-cols-3">
 				<div className="flex flex-col gap-4 lg:col-span-2">
@@ -273,22 +287,16 @@ export function PatientSummaryTab({
 							)}
 						</SummaryBlock>
 						<Separator />
-						<SummaryBlock title="Medicación y tratamientos">
-							{summary.currentMedications.length === 0 ? (
-								<p className="flex items-start gap-2 text-sm text-muted-foreground">
-									<Pill className="mt-0.5 size-4 shrink-0" />
-									Sin tratamientos activos. Aparecerán aquí cuando se registren.
-								</p>
-							) : (
-								<ul className="flex flex-col gap-1.5 text-sm">
-									{summary.currentMedications.map((medication) => (
-										<li key={medication.id}>
-											<span className="font-medium">{medication.name}</span> ·{' '}
-											{medication.instructions}
-										</li>
-									))}
-								</ul>
-							)}
+						<SummaryBlock title="Tratamientos activos">
+							<ActiveTreatmentsBlock petId={patientId} />
+							<Button
+								variant="ghost"
+								size="sm"
+								className="w-fit"
+								onClick={() => onGoToTab('tratamientos')}
+							>
+								Ver tratamientos
+							</Button>
 						</SummaryBlock>
 						<Separator />
 						<SummaryBlock title="Próxima atención">
@@ -303,6 +311,21 @@ export function PatientSummaryTab({
 										<p className="text-muted-foreground">
 											{summary.nextFollowUp.reason}
 										</p>
+										{canWrite && followUpHasPlan && (
+											<Button
+												variant="outline"
+												size="sm"
+												className="mt-2"
+												nativeButton={false}
+												render={
+													<Link
+														href={`/dashboard/patients/${patientId}/follow-ups/${summary.nextFollowUp.id}/control`}
+													/>
+												}
+											>
+												Registrar control
+											</Button>
+										)}
 									</div>
 								</div>
 							) : (

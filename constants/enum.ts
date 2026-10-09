@@ -119,3 +119,67 @@ export enum FollowUpStatus {
 	COMPLETED = 'COMPLETED',
 	CANCELLED = 'CANCELLED',
 }
+
+export enum TreatmentStatus {
+	PLANNED = 'PLANNED',
+	ACTIVE = 'ACTIVE',
+	COMPLETED = 'COMPLETED',
+	SUSPENDED = 'SUSPENDED',
+	CANCELLED = 'CANCELLED',
+}
+
+export enum ApplicationStatus {
+	SCHEDULED = 'SCHEDULED',
+	COMPLETED = 'COMPLETED',
+	SKIPPED = 'SKIPPED',
+	CANCELLED = 'CANCELLED',
+}
+
+export enum AdministrationContext {
+	HOME = 'HOME',
+	CLINIC = 'CLINIC',
+}
+
+export enum DurationUnit {
+	DAYS = 'DAYS',
+	WEEKS = 'WEEKS',
+	APPLICATIONS = 'APPLICATIONS',
+}
+
+export enum AdministrationRoute {
+	ORAL = 'ORAL',
+	IM = 'IM',
+	IV = 'IV',
+	SC = 'SC',
+	TOPICAL = 'TOPICAL',
+	OTHER = 'OTHER',
+}
+
+export enum DoseUnit {
+	MG = 'MG',
+	ML = 'ML',
+	TABLET = 'TABLET',
+	CAPSULE = 'CAPSULE',
+	DROPS = 'DROPS',
+	OTHER = 'OTHER',
+}
+
+export enum TreatmentOutcome {
+	COMPLETED = 'COMPLETED',
+	SUSPENDED = 'SUSPENDED',
+	CHANGED = 'CHANGED',
+	OTHER = 'OTHER',
+}
+
+export enum AdverseReactionSeverity {
+	MILD = 'MILD',
+	MODERATE = 'MODERATE',
+	SEVERE = 'SEVERE',
+}
+
+export enum FollowUpEvolution {
+	IMPROVED = 'IMPROVED',
+	UNCHANGED = 'UNCHANGED',
+	WORSENED = 'WORSENED',
+	RESOLVED = 'RESOLVED',
+}

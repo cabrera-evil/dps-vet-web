@@ -1,5 +1,6 @@
 import { ClinicalDataList } from '@/components/clinical/clinical-data-list';
 import { MeasurementGrid } from '@/components/clinical/measurement-grid';
+import { ConsultationTreatmentsBlock } from '@/components/treatments/consultation-treatments-block';
 import { Badge } from '@/components/ui/badge';
 import {
 	Breadcrumb,
@@ -172,6 +173,10 @@ export function ConsultationDetail({
 				<NoteSection title="Indicaciones">
 					<Narrative text={consultation.instructions} />
 				</NoteSection>
+				<ConsultationTreatmentsBlock
+					patientId={patientId}
+					consultationId={consultation.id}
+				/>
 				{(prognosis || consultation.followUp) && (
 					<NoteSection title="Pronóstico y seguimiento">
 						<ClinicalDataList
