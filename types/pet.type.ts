@@ -1,3 +1,5 @@
+import { PetSex } from '@/constants/enum';
+
 export interface Pet {
 	id: string;
 	ownerId: string;
@@ -6,6 +8,11 @@ export interface Pet {
 	breed: string;
 	birthDate: string;
 	notes?: string;
+	sex?: PetSex;
+	sterilized?: boolean;
+	color?: string;
+	markings?: string;
+	microchip?: string;
 	createdAt: string;
 }
 

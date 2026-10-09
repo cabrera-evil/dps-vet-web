@@ -15,8 +15,8 @@ export interface PatientIdentity {
 	recordNumber: string;
 	species: string;
 	breed: string;
-	sex: PetSex;
-	sterilized: boolean;
+	sex?: PetSex;
+	sterilized?: boolean;
 	birthDate: string;
 	color?: string;
 	markings?: string;
