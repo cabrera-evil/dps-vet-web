@@ -1,5 +1,6 @@
 'use client';
 
+import { ClinicalComboboxField } from '@/components/clinical/clinical-combobox-field';
 import { ClinicalSelectField } from '@/components/clinical/clinical-select-field';
 import { DatePicker } from '@/components/custom/date-picker';
 import { Button } from '@/components/ui/button';
@@ -200,7 +201,7 @@ export function PetFormDialog(props: PetFormDialogProps) {
 						onSubmit={handleSubmit(onSubmit)}
 					>
 						{canSelectOwner && (
-							<ClinicalSelectField
+							<ClinicalComboboxField
 								control={control}
 								name="ownerId"
 								id="pet-owner"
@@ -212,8 +213,9 @@ export function PetFormDialog(props: PetFormDialogProps) {
 								placeholder={
 									isLoadingClients
 										? 'Cargando clientes...'
-										: 'Selecciona el cliente'
+										: 'Busca por nombre o correo'
 								}
+								emptyLabel="Ningún cliente coincide"
 								disabled={isLoadingClients}
 							/>
 						)}
