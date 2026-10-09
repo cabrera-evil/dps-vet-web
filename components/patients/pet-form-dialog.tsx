@@ -31,6 +31,7 @@ import { PET_SEX_OPTIONS } from '@/constants/clinical';
 import { queryClient } from '@/constants/environment';
 import { Permission } from '@/constants/permission';
 import { useBreeds } from '@/hooks/use-breeds';
+import { useClients } from '@/hooks/use-clients';
 import { invalidatePatientRecord } from '@/hooks/use-patient-record';
 import { usePatch, usePost } from '@/hooks/use-rest';
 import { PetFormValues, petFormSchema } from '@/schemas/pet.schema';
@@ -45,6 +46,7 @@ import { toast } from 'sonner';
 import { PetSpeciesBreedFields } from './pet-species-breed-fields';
 
 const DEFAULT_VALUES: PetFormValues = {
+	ownerId: '',
 	name: '',
 	species: '',
 	breed: '',
@@ -72,6 +74,16 @@ export function PetFormDialog(props: PetFormDialogProps) {
 		hasPermission(session?.user?.permissions, [
 			Permission.MEDICAL_RECORDS_MANAGE_ALL,
 		]);
+	// Staff register pets on behalf of a client; a client always owns their own.
+	const canSelectOwner =
+		mode === 'create' &&
+		hasPermission(session?.user?.permissions, [
+			Permission.PETS_MANAGE_ALL,
+			Permission.USERS_READ,
+		]);
+	const { clients, isLoading: isLoadingClients } = useClients(
+		canSelectOwner && open
+	);
 	const { mutateAsync: createPet, isPending: isCreating } = usePost();
 	const { mutateAsync: updatePet, isPending: isUpdating } = usePatch();
 	const form = useForm<PetFormValues>({
@@ -94,6 +106,7 @@ export function PetFormDialog(props: PetFormDialogProps) {
 			reset(
 				mode === 'edit'
 					? {
+							ownerId: props.pet.ownerId,
 							name: props.pet.name,
 							species: props.pet.species,
 							breed: props.pet.breed ?? '',
@@ -112,7 +125,11 @@ export function PetFormDialog(props: PetFormDialogProps) {
 		setOpen(nextOpen);
 	}
 
-	async function onSubmit({ weightKg, ...values }: PetFormValues) {
+	async function onSubmit({ weightKg, ownerId, ...values }: PetFormValues) {
+		if (canSelectOwner && !ownerId) {
+			setError('ownerId', { message: 'Selecciona el cliente' });
+			return;
+		}
 		if (requiresBreed && !values.breed) {
 			setError('breed', { message: 'Selecciona la raza' });
 			return;
@@ -126,6 +143,7 @@ export function PetFormDialog(props: PetFormDialogProps) {
 					path: '/pets',
 					payload: {
 						...values,
+						ownerId: canSelectOwner ? ownerId : undefined,
 						weightKg:
 							canRecordWeight && weightKg ? Number(weightKg) : undefined,
 					},
@@ -181,6 +199,24 @@ export function PetFormDialog(props: PetFormDialogProps) {
 						className="flex flex-col gap-4"
 						onSubmit={handleSubmit(onSubmit)}
 					>
+						{canSelectOwner && (
+							<ClinicalSelectField
+								control={control}
+								name="ownerId"
+								id="pet-owner"
+								label="Cliente"
+								options={clients.map((client) => ({
+									value: client.id,
+									label: `${client.name} · ${client.email}`,
+								}))}
+								placeholder={
+									isLoadingClients
+										? 'Cargando clientes...'
+										: 'Selecciona el cliente'
+								}
+								disabled={isLoadingClients}
+							/>
+						)}
 						<Field data-invalid={!!errors.name}>
 							<FieldLabel htmlFor="name">Nombre</FieldLabel>
 							<Input id="name" {...register('name')} />

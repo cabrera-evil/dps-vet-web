@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { optionalNumber } from './optional-number';
 
 export const petFormSchema = z.object({
+	ownerId: z.string(),
 	name: z.string().min(1, { message: 'Ingresa el nombre de la mascota' }),
 	species: z.string().min(1, { message: 'Ingresa la especie' }),
 	breed: z.string(),

@@ -9,7 +9,9 @@ import type {
 	WithId,
 } from '@/app/api/_shared/repository/repository.types';
 import type { Breed } from '@/app/api/breeds/breed.schema';
+import type { User } from '@/app/api/users/user.schema';
 import { Permission } from '@/constants/permission';
+import { RoleName } from '@/constants/roles';
 import { hasPermission } from '@/utils/permission';
 import { FieldValue, type UpdateData } from 'firebase-admin/firestore';
 import createHttpError from 'http-errors';
@@ -34,7 +36,8 @@ import type { PetListResult } from './pet.types';
 export class PetService {
 	constructor(
 		private readonly repo: PetRepository & FirestoreCrudRepository<Pet>,
-		private readonly breedRepo: FirestoreReadRepository<Breed>
+		private readonly breedRepo: FirestoreReadRepository<Breed>,
+		private readonly userRepo: FirestoreReadRepository<User>
 	) {}
 
 	private canManageAll(identity: Identity): boolean {
@@ -98,18 +101,35 @@ export class PetService {
 		return breed;
 	}
 
+	/**
+	 * Only {@link Permission.PETS_MANAGE_ALL} callers may register a pet for
+	 * someone else, and that someone must be an existing client.
+	 */
+	private async resolveOwnerId(
+		identity: Identity,
+		ownerId?: string
+	): Promise<string> {
+		if (!ownerId || ownerId === identity.uid) return identity.uid;
+		if (!this.canManageAll(identity)) throw new createHttpError.Forbidden();
+
+		const owner = await this.userRepo.findById(ownerId);
+		if (owner?.role !== RoleName.CLIENTE)
+			throw new createHttpError.UnprocessableEntity('Owner must be a client');
+		return ownerId;
+	}
+
 	async create(
 		identity: Identity,
 		input: CreatePetInput
 	): Promise<WithId<Pet>> {
-		const { weightKg, ...fields } = input;
+		const { weightKg, ownerId, ...fields } = input;
 		// Weight is clinical data: only staff may record it.
 		if (weightKg !== undefined) assertClinicalStaff(identity);
 
 		const pet: Pet = {
 			...fields,
 			breed: await this.resolveBreed(fields.species, fields.breed),
-			ownerId: identity.uid,
+			ownerId: await this.resolveOwnerId(identity, ownerId),
 			createdAt: new Date().toISOString(),
 		};
 		return weightKg === undefined

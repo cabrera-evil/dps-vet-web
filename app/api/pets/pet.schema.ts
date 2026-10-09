@@ -24,10 +24,13 @@ const petInputSchema = petSchema.omit({
 });
 
 /**
- * `weightKg` is the optional weight taken at the front desk: it is not stored
- * on the pet but as the first entry of its weight history (staff only).
+ * `ownerId` lets staff register the pet on behalf of a client; any other
+ * caller can only own their own pets. `weightKg` is the optional weight taken
+ * at the front desk: it is not stored on the pet but as the first entry of its
+ * weight history (staff only).
  */
 export const createPetSchema = petInputSchema.extend({
+	ownerId: petSchema.shape.ownerId.optional(),
 	weightKg: weightKgSchema.optional(),
 });
 
