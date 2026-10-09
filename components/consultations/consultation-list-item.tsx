@@ -1,9 +1,9 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CONSULTATION_KIND_LABEL } from '@/constants/clinical';
 import { ConsultationStatus } from '@/constants/enum';
 import { cn } from '@/lib/utils';
 import type { ConsultationListItem as ConsultationListItemData } from '@/types/consultation.type';
+import { getConsultationKindLabel } from '@/utils/consultation';
 import { formatDate, formatTime } from '@/utils/date';
 import { CalendarClock } from 'lucide-react';
 import Link from 'next/link';
@@ -48,13 +48,19 @@ export function ConsultationListItem({
 				</div>
 				<div>
 					<h4 className="font-heading text-sm font-medium">
-						{CONSULTATION_KIND_LABEL[consultation.kind]}
+						{getConsultationKindLabel(consultation.kind)}
 					</h4>
 					<p className="text-xs text-muted-foreground">
 						{consultation.staffName}
 					</p>
 				</div>
-				<p className="line-clamp-2 text-sm">{consultation.reason}</p>
+				<p className="line-clamp-2 text-sm">
+					{consultation.reason ?? (
+						<span className="text-muted-foreground">
+							Sin motivo registrado.
+						</span>
+					)}
+				</p>
 				{consultation.mainDiagnosis && (
 					<p className="text-sm">
 						<span className="text-muted-foreground">Diagnóstico: </span>

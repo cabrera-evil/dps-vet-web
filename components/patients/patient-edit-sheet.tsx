@@ -16,7 +16,9 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { PET_SEX_LABEL } from '@/constants/clinical';
-import { useGet } from '@/hooks/use-rest';
+import { queryClient } from '@/constants/environment';
+import { invalidatePatientRecord } from '@/hooks/use-patient-record';
+import { useGet, usePatch } from '@/hooks/use-rest';
 import {
 	PatientGeneralDataFormValues,
 	patientGeneralDataFormSchema,
@@ -32,7 +34,6 @@ interface PatientEditSheetProps {
 	patient: PatientIdentity;
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	onSave: (values: PatientGeneralDataFormValues) => void;
 }
 
 const SEX_OPTIONS = Object.entries(PET_SEX_LABEL).map(([value, label]) => ({
@@ -58,8 +59,8 @@ export function PatientEditSheet({
 	patient,
 	open,
 	onOpenChange,
-	onSave,
 }: PatientEditSheetProps) {
+	const { mutateAsync: updatePet, isPending } = usePatch();
 	const { data: species } = useGet<CatalogEntry[]>({
 		path: '/species',
 		params: { pageSize: 100 },
@@ -83,8 +84,16 @@ export function PatientEditSheet({
 		if (open) reset(toFormValues(patient));
 	}, [open, patient, reset]);
 
-	function onSubmit(values: PatientGeneralDataFormValues) {
-		onSave(values);
+	async function onSubmit(values: PatientGeneralDataFormValues) {
+		try {
+			await updatePet({ path: `/pets/${patient.id}`, payload: values });
+		} catch {
+			return;
+		}
+		await Promise.all([
+			queryClient.invalidateQueries({ queryKey: ['/pets'] }),
+			invalidatePatientRecord(patient.id),
+		]);
 		toast.success('Datos del paciente actualizados');
 		onOpenChange(false);
 	}
@@ -204,7 +213,7 @@ export function PatientEditSheet({
 					</Field>
 				</form>
 				<SheetFooter>
-					<Button type="submit" form="patient-edit-form">
+					<Button type="submit" form="patient-edit-form" disabled={isPending}>
 						Guardar cambios
 					</Button>
 				</SheetFooter>

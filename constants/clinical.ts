@@ -123,6 +123,8 @@ export const CLINICAL_ALERT_LABEL: Record<ClinicalAlertType, string> = {
 	[ClinicalAlertType.CHRONIC_CONDITION]: 'Enfermedad crónica',
 };
 
+export const CLINICAL_ALERT_OPTIONS = toOptions(CLINICAL_ALERT_LABEL);
+
 export const BODY_CONDITION_OPTIONS: SelectOption[] = [
 	{ value: '1', label: '1 · Caquéctico' },
 	{ value: '2', label: '2 · Muy delgado' },

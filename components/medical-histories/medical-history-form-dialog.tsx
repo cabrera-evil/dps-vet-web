@@ -17,10 +17,13 @@ import {
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import {
+	CLINICAL_ALERT_OPTIONS,
 	MEDICAL_HISTORY_STATUS_OPTIONS,
 	MEDICAL_HISTORY_TYPE_OPTIONS,
 } from '@/constants/clinical';
 import { MedicalHistoryStatus, MedicalHistoryType } from '@/constants/enum';
+import { invalidatePatientRecord } from '@/hooks/use-patient-record';
+import { usePatch, usePost } from '@/hooks/use-rest';
 import {
 	MedicalHistoryFormValues,
 	medicalHistoryFormSchema,
@@ -29,7 +32,7 @@ import type { MedicalHistoryEntry } from '@/types/medical-history.type';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Pencil, Plus } from 'lucide-react';
 import { useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 
 const DEFAULT_VALUES: MedicalHistoryFormValues = {
@@ -39,18 +42,18 @@ const DEFAULT_VALUES: MedicalHistoryFormValues = {
 	status: MedicalHistoryStatus.ACTIVE,
 	description: '',
 	isAlert: false,
+	alertType: '',
 };
 
-type MedicalHistoryFormDialogProps = {
-	onSave: (values: MedicalHistoryFormValues, id?: string) => void;
-} & (
-	| { mode: 'create'; entry?: never }
-	| { mode: 'edit'; entry: MedicalHistoryEntry }
-);
+type MedicalHistoryFormDialogProps =
+	| { mode: 'create'; petId: string; entry?: never }
+	| { mode: 'edit'; petId: string; entry: MedicalHistoryEntry };
 
 export function MedicalHistoryFormDialog(props: MedicalHistoryFormDialogProps) {
-	const { mode, onSave } = props;
+	const { mode, petId } = props;
 	const [open, setOpen] = useState(false);
+	const { mutateAsync: createHistory, isPending: isCreating } = usePost();
+	const { mutateAsync: updateHistory, isPending: isUpdating } = usePatch();
 	const {
 		register,
 		control,
@@ -61,6 +64,7 @@ export function MedicalHistoryFormDialog(props: MedicalHistoryFormDialogProps) {
 		resolver: zodResolver(medicalHistoryFormSchema),
 		defaultValues: DEFAULT_VALUES,
 	});
+	const isAlert = useWatch({ control, name: 'isAlert' });
 
 	function handleOpenChange(nextOpen: boolean) {
 		if (nextOpen) {
@@ -73,6 +77,7 @@ export function MedicalHistoryFormDialog(props: MedicalHistoryFormDialogProps) {
 							status: props.entry.status,
 							description: props.entry.description ?? '',
 							isAlert: props.entry.isAlert,
+							alertType: props.entry.alertType ?? '',
 						}
 					: DEFAULT_VALUES
 			);
@@ -80,13 +85,40 @@ export function MedicalHistoryFormDialog(props: MedicalHistoryFormDialogProps) {
 		setOpen(nextOpen);
 	}
 
-	function onSubmit(values: MedicalHistoryFormValues) {
-		onSave(values, mode === 'edit' ? props.entry.id : undefined);
+	async function onSubmit(values: MedicalHistoryFormValues) {
+		const payload = {
+			...values,
+			alertType: values.isAlert ? values.alertType : undefined,
+		};
+		try {
+			if (mode === 'edit') {
+				await updateHistory({
+					path: `/medical-histories/${props.entry.id}`,
+					// `null` clears an optional field; empty strings are dropped by the REST client.
+					payload: {
+						...payload,
+						approximateDate: values.approximateDate || null,
+						description: values.description || null,
+					},
+				});
+			} else {
+				await createHistory({
+					path: `/pets/${petId}/medical-histories`,
+					payload,
+				});
+			}
+		} catch {
+			return;
+		}
+
+		await invalidatePatientRecord(petId);
 		toast.success(
 			mode === 'edit' ? 'Antecedente actualizado' : 'Antecedente agregado'
 		);
 		setOpen(false);
 	}
+
+	const isPending = isCreating || isUpdating;
 
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
@@ -192,9 +224,23 @@ export function MedicalHistoryFormDialog(props: MedicalHistoryFormDialogProps) {
 							Relevante: mostrar como alerta en el expediente
 						</FieldLabel>
 					</Field>
+					{isAlert && (
+						<ClinicalSelectField
+							control={control}
+							name="alertType"
+							id="history-alert-type"
+							label="Tipo de alerta"
+							options={CLINICAL_ALERT_OPTIONS}
+							placeholder="Selecciona el tipo de alerta"
+						/>
+					)}
 				</form>
 				<DialogFooter>
-					<Button type="submit" form="medical-history-form">
+					<Button
+						type="submit"
+						form="medical-history-form"
+						disabled={isPending}
+					>
 						{mode === 'edit' ? 'Guardar cambios' : 'Agregar antecedente'}
 					</Button>
 				</DialogFooter>

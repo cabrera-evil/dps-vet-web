@@ -1,4 +1,8 @@
-import { MedicalHistoryStatus, MedicalHistoryType } from '@/constants/enum';
+import {
+	ClinicalAlertType,
+	MedicalHistoryStatus,
+	MedicalHistoryType,
+} from '@/constants/enum';
 
 export interface MedicalHistoryEntry {
 	id: string;
@@ -8,4 +12,5 @@ export interface MedicalHistoryEntry {
 	status: MedicalHistoryStatus;
 	description?: string;
 	isAlert: boolean;
+	alertType?: ClinicalAlertType;
 }

@@ -25,8 +25,8 @@ export const diagnosisFormSchema = z.object({
 });
 
 export const consultationDraftSchema = z.object({
-	date: z.string(),
-	time: z.string(),
+	date: z.string().min(1, { message: 'Selecciona una fecha' }),
+	time: z.string().min(1, { message: 'Selecciona una hora' }),
 	staffId: z.string(),
 	appointmentId: z.string(),
 	kind: z.string(),
@@ -63,8 +63,6 @@ export const consultationFinalizeSchema = consultationDraftSchema.superRefine(
 		const required = (path: (string | number)[], message: string) =>
 			ctx.addIssue({ code: z.ZodIssueCode.custom, path, message });
 
-		if (!values.date) required(['date'], 'Selecciona una fecha');
-		if (!values.time) required(['time'], 'Selecciona una hora');
 		if (!values.staffId) required(['staffId'], 'Selecciona el veterinario');
 		if (!values.kind) required(['kind'], 'Selecciona el tipo de consulta');
 		if (values.reason.trim().length < 10)

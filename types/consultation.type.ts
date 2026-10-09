@@ -24,6 +24,7 @@ export interface ConsultationMeasurements {
 	bodyConditionScore?: number;
 	hydration?: string;
 	mucousMembranes?: string;
+	mucousMembranesOther?: string;
 	capillaryRefill?: string;
 	pain?: string;
 }
@@ -37,26 +38,29 @@ export interface FollowUp {
 
 export interface ConsultationListItem {
 	id: string;
-	kind: ConsultationKind;
+	kind?: ConsultationKind;
 	status: ConsultationStatus;
 	occurredAt: string;
 	staffName: string;
-	reason: string;
+	reason?: string;
 	mainDiagnosis?: string;
 	requiresFollowUp: boolean;
 }
 
 export interface ConsultationRecord extends ConsultationListItem {
-	appointmentLabel?: string;
-	anamnesis: string;
+	petId: string;
+	staffId: string;
+	appointmentId?: string;
+	anamnesis?: string;
 	measurements: ConsultationMeasurements;
-	physicalExam: string;
+	physicalExam?: string;
 	diagnoses: ConsultationDiagnosis[];
 	noDefinedDiagnosis: boolean;
-	instructions: string;
+	instructions?: string;
 	internalNotes?: string;
 	prognosis?: string;
 	followUp?: Omit<FollowUp, 'id' | 'sourceConsultationId'>;
+	updatedAt: string;
 }
 
 export interface ConsultationOption {

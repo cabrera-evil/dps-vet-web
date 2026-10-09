@@ -9,7 +9,6 @@ import {
 } from '@/components/ui/empty';
 import { MEDICAL_HISTORY_TYPE_LABEL } from '@/constants/clinical';
 import { MedicalHistoryType } from '@/constants/enum';
-import type { MedicalHistoryFormValues } from '@/schemas/medical-history.schema';
 import type { MedicalHistoryEntry } from '@/types/medical-history.type';
 import { FileHeart } from 'lucide-react';
 import { MedicalHistoryFormDialog } from './medical-history-form-dialog';
@@ -23,15 +22,15 @@ const GROUP_ORDER = [
 ];
 
 interface MedicalHistoryTabProps {
+	petId: string;
 	entries: MedicalHistoryEntry[];
 	canWrite: boolean;
-	onSave: (values: MedicalHistoryFormValues, id?: string) => void;
 }
 
 export function MedicalHistoryTab({
+	petId,
 	entries,
 	canWrite,
-	onSave,
 }: MedicalHistoryTabProps) {
 	const groups = GROUP_ORDER.map((type) => ({
 		type,
@@ -45,7 +44,7 @@ export function MedicalHistoryTab({
 					Historia médica del paciente, independiente de cada consulta.
 				</p>
 				{canWrite && entries.length > 0 && (
-					<MedicalHistoryFormDialog mode="create" onSave={onSave} />
+					<MedicalHistoryFormDialog mode="create" petId={petId} />
 				)}
 			</div>
 			{groups.length === 0 ? (
@@ -62,7 +61,7 @@ export function MedicalHistoryTab({
 					</EmptyHeader>
 					{canWrite && (
 						<EmptyContent>
-							<MedicalHistoryFormDialog mode="create" onSave={onSave} />
+							<MedicalHistoryFormDialog mode="create" petId={petId} />
 						</EmptyContent>
 					)}
 				</Empty>
@@ -77,9 +76,9 @@ export function MedicalHistoryTab({
 								{items.map((entry) => (
 									<MedicalHistoryItem
 										key={entry.id}
+										petId={petId}
 										entry={entry}
 										canWrite={canWrite}
-										onSave={onSave}
 									/>
 								))}
 							</ul>

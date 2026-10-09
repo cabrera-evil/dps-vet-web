@@ -21,16 +21,26 @@ import {
 } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
 import { ConsultationStatus } from '@/constants/enum';
-import { usePreviewScenario } from '@/hooks/use-preview-scenario';
+import { useConsultationOptions } from '@/hooks/use-consultation-options';
+import {
+	invalidateConsultation,
+	invalidatePatientRecord,
+} from '@/hooks/use-patient-record';
+import { usePatch, usePost } from '@/hooks/use-rest';
 import {
 	ConsultationFormValues,
 	consultationDraftSchema,
 	consultationFinalizeSchema,
 } from '@/schemas/consultation.schema';
 import type { ConsultationRecord } from '@/types/consultation.type';
+import {
+	buildConsultationFormValues,
+	buildConsultationPayload,
+} from '@/utils/consultation';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { CircleAlert, CircleCheck, TriangleAlert } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -46,11 +56,6 @@ import {
 } from './consultation-patient-bar';
 import { ConsultationReasonSection } from './consultation-reason-section';
 import { ConsultationStatusBadge } from './consultation-status-badge';
-import {
-	APPOINTMENT_OPTIONS_MOCK,
-	DIAGNOSIS_CATALOG_MOCK,
-	STAFF_OPTIONS_MOCK,
-} from './mocks/consultations.mock';
 
 const SECTIONS = [
 	{ id: 'informacion', label: 'Información' },
@@ -59,55 +64,6 @@ const SECTIONS = [
 	{ id: 'diagnostico', label: 'Diagnóstico' },
 	{ id: 'cierre', label: 'Indicaciones y cierre' },
 ];
-
-const str = (value?: number | string) =>
-	value === undefined ? '' : String(value);
-
-function buildDefaultValues(
-	consultation?: ConsultationRecord
-): ConsultationFormValues {
-	const occurredAt = consultation && parseISO(consultation.occurredAt);
-	const measurements = consultation?.measurements;
-	return {
-		date: occurredAt ? format(occurredAt, 'yyyy-MM-dd') : '',
-		time: occurredAt ? format(occurredAt, 'HH:mm') : '',
-		staffId:
-			STAFF_OPTIONS_MOCK.find(
-				(staff) => staff.label === consultation?.staffName
-			)?.id ?? STAFF_OPTIONS_MOCK[0].id,
-		appointmentId: '',
-		kind: consultation?.kind ?? '',
-		reason: consultation?.reason ?? '',
-		anamnesis: consultation?.anamnesis ?? '',
-		weightKg: str(measurements?.weightKg),
-		temperatureC: str(measurements?.temperatureC),
-		heartRateBpm: str(measurements?.heartRateBpm),
-		respiratoryRateRpm: str(measurements?.respiratoryRateRpm),
-		bodyConditionScore: str(measurements?.bodyConditionScore),
-		hydration: measurements?.hydration ?? '',
-		mucousMembranes: measurements?.mucousMembranes ?? '',
-		mucousMembranesOther: '',
-		capillaryRefill: measurements?.capillaryRefill ?? '',
-		pain: measurements?.pain ?? '',
-		physicalExam: consultation?.physicalExam ?? '',
-		diagnoses:
-			consultation?.diagnoses.map((diagnosis) => ({
-				name: diagnosis.name,
-				type: diagnosis.type,
-				status: diagnosis.status,
-				severity: diagnosis.severity ?? '',
-				notes: diagnosis.notes ?? '',
-				isActiveProblem: diagnosis.isActiveProblem,
-			})) ?? [],
-		noDefinedDiagnosis: consultation?.noDefinedDiagnosis ?? false,
-		instructions: consultation?.instructions ?? '',
-		internalNotes: consultation?.internalNotes ?? '',
-		prognosis: consultation?.prognosis ?? '',
-		requiresFollowUp: !!consultation?.followUp,
-		followUpDate: consultation?.followUp?.recommendedDate ?? '',
-		followUpReason: consultation?.followUp?.reason ?? '',
-	};
-}
 
 interface ConsultationFormProps {
 	patientId: string;
@@ -121,12 +77,20 @@ export function ConsultationForm({
 	consultation,
 }: ConsultationFormProps) {
 	const router = useRouter();
-	const scenario = usePreviewScenario();
+	const { data: session } = useSession();
+	const { staff, appointments, diagnoses } = useConsultationOptions(patientId);
+	const { mutateAsync: createConsultation, isPending: isCreating } =
+		usePost<ConsultationRecord>();
+	const { mutateAsync: updateConsultation, isPending: isUpdating } =
+		usePatch<ConsultationRecord>();
+	const { mutateAsync: finalizeConsultation, isPending: isFinalizing } =
+		usePost<ConsultationRecord>();
 	const [confirmOpen, setConfirmOpen] = useState(false);
 	const [saveError, setSaveError] = useState<string | null>(null);
+	const [updatedAt, setUpdatedAt] = useState(consultation?.updatedAt);
 	const methods = useForm<ConsultationFormValues>({
 		resolver: zodResolver(consultationFinalizeSchema),
-		defaultValues: buildDefaultValues(consultation),
+		defaultValues: buildConsultationFormValues(consultation),
 	});
 	const {
 		setValue,
@@ -137,6 +101,8 @@ export function ConsultationForm({
 	} = methods;
 	const expedienteHref = `/dashboard/patients/${patientId}?tab=consultas`;
 	const errorCount = Object.keys(errors).length;
+	const isBusy = isCreating || isUpdating || isFinalizing;
+	const currentUserId = session?.user?.uid;
 
 	useEffect(() => {
 		if (consultation) return;
@@ -145,7 +111,13 @@ export function ConsultationForm({
 		setValue('time', format(now, 'HH:mm'));
 	}, [consultation, setValue]);
 
-	function handleSaveDraft() {
+	useEffect(() => {
+		if (consultation || !currentUserId || getValues('staffId')) return;
+		if (staff.some((member) => member.id === currentUserId))
+			setValue('staffId', currentUserId);
+	}, [consultation, currentUserId, staff, getValues, setValue]);
+
+	async function saveDraft(): Promise<ConsultationRecord | undefined> {
 		const result = consultationDraftSchema.safeParse(getValues());
 		if (!result.success) {
 			result.error.issues.forEach((issue) =>
@@ -157,14 +129,38 @@ export function ConsultationForm({
 			toast.error('Revisa los campos marcados');
 			return;
 		}
-		if (scenario === 'save-error') {
+
+		try {
+			const saved = consultation
+				? await updateConsultation({
+						path: `/consultations/${consultation.id}`,
+						payload: buildConsultationPayload(result.data, updatedAt),
+					})
+				: await createConsultation({
+						path: `/pets/${patientId}/consultations`,
+						payload: buildConsultationPayload(result.data),
+					});
+			setSaveError(null);
+			setUpdatedAt(saved.updatedAt);
+			// A stale cached draft would send an outdated `expectedUpdatedAt` on the next edit.
+			await invalidateConsultation(saved.id);
+			return saved;
+		} catch {
 			setSaveError(
 				'No se pudo guardar el borrador. Lo que escribiste se conserva en el formulario.'
 			);
-			return;
 		}
-		setSaveError(null);
+	}
+
+	async function handleSaveDraft() {
+		const saved = await saveDraft();
+		if (!saved) return;
+		await invalidatePatientRecord(patientId);
 		toast.success('Borrador guardado');
+		if (!consultation)
+			router.replace(
+				`/dashboard/patients/${patientId}/consultations/${saved.id}`
+			);
 	}
 
 	const handleFinalize = handleSubmit(
@@ -178,7 +174,26 @@ export function ConsultationForm({
 			})
 	);
 
-	function confirmFinalize() {
+	async function confirmFinalize() {
+		setConfirmOpen(false);
+		const saved = await saveDraft();
+		if (!saved) return;
+		try {
+			await finalizeConsultation({
+				path: `/consultations/${saved.id}/finalize`,
+			});
+		} catch {
+			// The draft exists now; moving to it prevents creating a duplicate on retry.
+			if (!consultation)
+				router.replace(
+					`/dashboard/patients/${patientId}/consultations/${saved.id}`
+				);
+			return;
+		}
+		await Promise.all([
+			invalidatePatientRecord(patientId),
+			invalidateConsultation(saved.id),
+		]);
 		toast.success('Consulta finalizada', {
 			description: `Ya forma parte del historial de ${patient.name}.`,
 		});
@@ -224,6 +239,7 @@ export function ConsultationForm({
 									type="button"
 									size="sm"
 									variant="outline"
+									disabled={isBusy}
 									onClick={handleSaveDraft}
 								>
 									Reintentar
@@ -248,13 +264,10 @@ export function ConsultationForm({
 					onSubmit={(event) => event.preventDefault()}
 					className="flex flex-col"
 				>
-					<ConsultationInfoSection
-						staff={STAFF_OPTIONS_MOCK}
-						appointments={APPOINTMENT_OPTIONS_MOCK}
-					/>
+					<ConsultationInfoSection staff={staff} appointments={appointments} />
 					<ConsultationReasonSection />
 					<ConsultationEvaluationSection />
-					<ConsultationDiagnosesSection catalog={DIAGNOSIS_CATALOG_MOCK} />
+					<ConsultationDiagnosesSection catalog={diagnoses} />
 					<ConsultationClosureSection />
 
 					<div className="sticky bottom-0 z-20 -mx-4 flex flex-wrap items-center justify-between gap-3 border-t bg-background/95 px-4 py-3 backdrop-blur supports-backdrop-filter:bg-background/80 md:-mx-6 md:px-6">
@@ -270,10 +283,15 @@ export function ConsultationForm({
 							>
 								Cancelar
 							</Button>
-							<Button type="button" variant="outline" onClick={handleSaveDraft}>
+							<Button
+								type="button"
+								variant="outline"
+								disabled={isBusy}
+								onClick={handleSaveDraft}
+							>
 								Guardar borrador
 							</Button>
-							<Button type="button" onClick={handleFinalize}>
+							<Button type="button" disabled={isBusy} onClick={handleFinalize}>
 								<CircleCheck />
 								Finalizar consulta
 							</Button>

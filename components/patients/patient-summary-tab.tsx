@@ -12,12 +12,12 @@ import { Separator } from '@/components/ui/separator';
 import type { RecordTab } from '@/constants/clinical';
 import {
 	CLINICAL_ALERT_LABEL,
-	CONSULTATION_KIND_LABEL,
 	MEDICAL_HISTORY_STATUS_LABEL,
 } from '@/constants/clinical';
 import type { ConsultationListItem } from '@/types/consultation.type';
 import type { MedicalHistoryEntry } from '@/types/medical-history.type';
 import type { PatientClinicalSummary } from '@/types/patient-record.type';
+import { getConsultationKindLabel } from '@/utils/consultation';
 import { formatDate } from '@/utils/date';
 import {
 	CalendarClock,
@@ -150,12 +150,14 @@ export function PatientSummaryTab({
 											{formatDate(lastConsultation.occurredAt)}
 										</p>
 										<p className="font-heading text-sm font-medium">
-											{CONSULTATION_KIND_LABEL[lastConsultation.kind]}
+											{getConsultationKindLabel(lastConsultation.kind)}
 										</p>
 									</div>
 									<div>
 										<p className="text-xs text-muted-foreground">Motivo</p>
-										<p className="text-sm">{lastConsultation.reason}</p>
+										<p className="text-sm">
+											{lastConsultation.reason ?? 'Sin motivo registrado.'}
+										</p>
 									</div>
 									{lastConsultation.mainDiagnosis && (
 										<div>

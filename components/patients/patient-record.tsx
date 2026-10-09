@@ -5,19 +5,15 @@ import { MedicalHistoryTab } from '@/components/medical-histories/medical-histor
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RECORD_TABS } from '@/constants/clinical';
-import { ConsultationStatus, PetSex } from '@/constants/enum';
+import { ConsultationStatus } from '@/constants/enum';
 import { Permission } from '@/constants/permission';
-import { usePreviewScenario } from '@/hooks/use-preview-scenario';
-import type { MedicalHistoryFormValues } from '@/schemas/medical-history.schema';
-import type { PatientGeneralDataFormValues } from '@/schemas/patient-record.schema';
-import type { MedicalHistoryEntry } from '@/types/medical-history.type';
-import type { PatientIdentity } from '@/types/patient-record.type';
+import { usePatientRecord } from '@/hooks/use-patient-record';
+import { isNotFoundError } from '@/utils/http-error';
 import { hasPermission } from '@/utils/permission';
-import { CircleAlert, ShieldAlert } from 'lucide-react';
+import { CircleAlert, FileQuestion, ShieldAlert } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { parseAsStringLiteral, useQueryState } from 'nuqs';
-import { useEffect, useMemo, useState } from 'react';
-import { getPatientRecordMock } from './mocks/patient-record.mock';
+import { useState } from 'react';
 import { PatientEditSheet } from './patient-edit-sheet';
 import { PatientGeneralDataTab } from './patient-general-data-tab';
 import { PatientRecordHeader } from './patient-record-header';
@@ -27,37 +23,23 @@ import { PatientSummaryTab } from './patient-summary-tab';
 
 export function PatientRecord({ patientId }: { patientId: string }) {
 	const { data: session, status } = useSession();
-	const scenario = usePreviewScenario();
 	const [tab, setTab] = useQueryState(
 		'tab',
 		parseAsStringLiteral(RECORD_TABS).withDefault('resumen')
 	);
-	const record = useMemo(
-		() => getPatientRecordMock(patientId, scenario),
-		[patientId, scenario]
-	);
-	const [patientOverrides, setPatientOverrides] =
-		useState<Partial<PatientIdentity>>();
-	const [histories, setHistories] = useState<MedicalHistoryEntry[]>(
-		record.histories
-	);
 	const [editOpen, setEditOpen] = useState(false);
 
-	useEffect(() => {
-		setHistories(record.histories);
-		setPatientOverrides(undefined);
-	}, [record]);
-
-	if (status === 'loading' || scenario === 'loading')
-		return <PatientRecordSkeleton />;
-
 	const permissions = session?.user?.permissions;
-	const canRead = hasPermission(permissions, [Permission.MEDICAL_RECORDS_READ]);
-	const canWrite = hasPermission(permissions, [
-		Permission.MEDICAL_RECORDS_WRITE,
+	const canRead = hasPermission(permissions, [
+		Permission.MEDICAL_RECORDS_MANAGE_ALL,
 	]);
+	const canWrite =
+		canRead && hasPermission(permissions, [Permission.MEDICAL_RECORDS_WRITE]);
+	const record = usePatientRecord(patientId, canRead);
 
-	if (!canRead || scenario === 'denied')
+	if (status === 'loading') return <PatientRecordSkeleton />;
+
+	if (!canRead)
 		return (
 			<PatientRecordNotice
 				icon={ShieldAlert}
@@ -66,57 +48,39 @@ export function PatientRecord({ patientId }: { patientId: string }) {
 			/>
 		);
 
-	if (scenario === 'error')
-		return (
+	if (record.error)
+		return isNotFoundError(record.error) ? (
+			<PatientRecordNotice
+				icon={FileQuestion}
+				title="No encontramos este paciente"
+				description="Es posible que haya sido eliminado o que el enlace sea incorrecto."
+			/>
+		) : (
 			<PatientRecordNotice
 				icon={CircleAlert}
 				title="No pudimos cargar el expediente"
 				description="Ocurrió un problema al obtener la información del paciente. Intenta nuevamente."
 				action={
-					<Button
-						variant="outline"
-						onClick={() => window.location.assign(window.location.pathname)}
-					>
+					<Button variant="outline" onClick={() => record.refetch()}>
 						Reintentar
 					</Button>
 				}
 			/>
 		);
 
-	const patient: PatientIdentity = { ...record.patient, ...patientOverrides };
-	const lastConsultation = record.consultations.find(
+	if (!record.data) return <PatientRecordSkeleton />;
+
+	const { patient, summary, histories, consultations } = record.data;
+	const lastConsultation = consultations.find(
 		(consultation) => consultation.status === ConsultationStatus.FINALIZED
 	);
-
-	function saveGeneralData(values: PatientGeneralDataFormValues) {
-		setPatientOverrides({
-			...values,
-			sex: values.sex as PetSex,
-			color: values.color || undefined,
-			markings: values.markings || undefined,
-			microchip: values.microchip || undefined,
-		});
-	}
-
-	function saveHistory(values: MedicalHistoryFormValues, id?: string) {
-		const entry = {
-			...values,
-			approximateDate: values.approximateDate || undefined,
-			description: values.description || undefined,
-		};
-		setHistories((current) =>
-			id
-				? current.map((item) => (item.id === id ? { ...item, ...entry } : item))
-				: [{ id: `history-${Date.now()}`, ...entry }, ...current]
-		);
-	}
 
 	return (
 		<div className="flex flex-col gap-6">
 			<PatientRecordHeader
 				patient={patient}
-				alerts={record.summary.alerts}
-				lastWeight={record.summary.weightHistory[0]}
+				alerts={summary.alerts}
+				lastWeight={summary.weightHistory[0]}
 				canWrite={canWrite}
 				onEdit={() => setEditOpen(true)}
 			/>
@@ -153,7 +117,7 @@ export function PatientRecord({ patientId }: { patientId: string }) {
 				<TabsContent value="resumen" className="pt-4">
 					<PatientSummaryTab
 						patientId={patientId}
-						summary={record.summary}
+						summary={summary}
 						histories={histories}
 						lastConsultation={lastConsultation}
 						canWrite={canWrite}
@@ -163,15 +127,15 @@ export function PatientRecord({ patientId }: { patientId: string }) {
 				<TabsContent value="consultas" className="pt-4">
 					<ConsultationsTab
 						patientId={patientId}
-						consultations={record.consultations}
+						consultations={consultations}
 						canWrite={canWrite}
 					/>
 				</TabsContent>
 				<TabsContent value="antecedentes" className="pt-4">
 					<MedicalHistoryTab
+						petId={patientId}
 						entries={histories}
 						canWrite={canWrite}
-						onSave={saveHistory}
 					/>
 				</TabsContent>
 				<TabsContent value="datos" className="pt-4">
@@ -186,7 +150,6 @@ export function PatientRecord({ patientId }: { patientId: string }) {
 				patient={patient}
 				open={editOpen}
 				onOpenChange={setEditOpen}
-				onSave={saveGeneralData}
 			/>
 		</div>
 	);

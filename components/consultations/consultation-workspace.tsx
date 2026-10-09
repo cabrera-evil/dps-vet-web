@@ -1,21 +1,21 @@
 'use client';
 
-import { getPatientRecordMock } from '@/components/patients/mocks/patient-record.mock';
 import { PatientRecordNotice } from '@/components/patients/patient-record-notice';
 import { PatientRecordSkeleton } from '@/components/patients/patient-record-skeleton';
 import { Button } from '@/components/ui/button';
 import { ConsultationStatus } from '@/constants/enum';
 import { Permission } from '@/constants/permission';
-import { usePreviewScenario } from '@/hooks/use-preview-scenario';
+import { usePatientClinicalSummary } from '@/hooks/use-patient-record';
+import { useGet } from '@/hooks/use-rest';
+import type { ConsultationRecord } from '@/types/consultation.type';
+import { isNotFoundError } from '@/utils/http-error';
 import { hasPermission } from '@/utils/permission';
-import { FileQuestion, ShieldAlert } from 'lucide-react';
+import { CircleAlert, FileQuestion, ShieldAlert } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
-import { useMemo } from 'react';
 import { ConsultationDetail } from './consultation-detail';
 import { ConsultationForm } from './consultation-form';
 import type { ConsultationPatientContext } from './consultation-patient-bar';
-import { getConsultationMock } from './mocks/consultations.mock';
 
 interface ConsultationWorkspaceProps {
 	patientId: string;
@@ -28,20 +28,20 @@ export function ConsultationWorkspace({
 	consultationId,
 }: ConsultationWorkspaceProps) {
 	const { data: session, status } = useSession();
-	const scenario = usePreviewScenario();
-	const record = useMemo(
-		() => getPatientRecordMock(patientId, scenario),
-		[patientId, scenario]
+	const permissions = session?.user?.permissions;
+	const canRead = hasPermission(permissions, [
+		Permission.MEDICAL_RECORDS_MANAGE_ALL,
+	]);
+	const canWrite =
+		canRead && hasPermission(permissions, [Permission.MEDICAL_RECORDS_WRITE]);
+	const summaryQuery = usePatientClinicalSummary(patientId, canRead);
+	const consultationQuery = useGet<ConsultationRecord>(
+		{ path: `/consultations/${consultationId}` },
+		{ enabled: canRead && !!consultationId }
 	);
 
-	if (status === 'loading' || scenario === 'loading')
-		return <PatientRecordSkeleton />;
+	if (status === 'loading') return <PatientRecordSkeleton />;
 
-	const permissions = session?.user?.permissions;
-	const canRead = hasPermission(permissions, [Permission.MEDICAL_RECORDS_READ]);
-	const canWrite = hasPermission(permissions, [
-		Permission.MEDICAL_RECORDS_WRITE,
-	]);
 	const backAction = (
 		<Button
 			variant="outline"
@@ -52,7 +52,7 @@ export function ConsultationWorkspace({
 		</Button>
 	);
 
-	if (!canRead || scenario === 'denied')
+	if (!canRead)
 		return (
 			<PatientRecordNotice
 				icon={ShieldAlert}
@@ -62,19 +62,40 @@ export function ConsultationWorkspace({
 			/>
 		);
 
-	const patient: ConsultationPatientContext = {
-		name: record.patient.name,
-		species: record.patient.species,
-		breed: record.patient.breed,
-		birthDate: record.patient.birthDate,
-		lastWeight: record.summary.weightHistory[0],
-		alerts: record.summary.alerts,
-	};
-	const consultation = consultationId
-		? getConsultationMock(consultationId)
-		: undefined;
+	const error = summaryQuery.error ?? consultationQuery.error;
+	if (error)
+		return isNotFoundError(error) ? (
+			<PatientRecordNotice
+				icon={FileQuestion}
+				title="No encontramos esta consulta"
+				description="Es posible que haya sido movida o que el enlace sea incorrecto."
+				action={backAction}
+			/>
+		) : (
+			<PatientRecordNotice
+				icon={CircleAlert}
+				title="No pudimos cargar la consulta"
+				description="Ocurrió un problema al obtener la información. Intenta nuevamente."
+				action={
+					<Button
+						variant="outline"
+						onClick={() => {
+							summaryQuery.refetch();
+							if (consultationId) consultationQuery.refetch();
+						}}
+					>
+						Reintentar
+					</Button>
+				}
+			/>
+		);
 
-	if (consultationId && !consultation)
+	const summary = summaryQuery.data;
+	const consultation = consultationQuery.data;
+	if (!summary || (consultationId && !consultation))
+		return <PatientRecordSkeleton />;
+
+	if (consultation && consultation.petId !== patientId)
 		return (
 			<PatientRecordNotice
 				icon={FileQuestion}
@@ -83,6 +104,15 @@ export function ConsultationWorkspace({
 				action={backAction}
 			/>
 		);
+
+	const patient: ConsultationPatientContext = {
+		name: summary.patient.name,
+		species: summary.patient.species,
+		breed: summary.patient.breed,
+		birthDate: summary.patient.birthDate,
+		lastWeight: summary.weightHistory[0],
+		alerts: summary.alerts,
+	};
 
 	if (!consultation || consultation.status === ConsultationStatus.DRAFT) {
 		if (!canWrite)

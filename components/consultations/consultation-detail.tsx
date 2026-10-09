@@ -12,13 +12,14 @@ import {
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import {
-	CONSULTATION_KIND_LABEL,
 	DIAGNOSIS_SEVERITY_LABEL,
 	DIAGNOSIS_STATUS_LABEL,
 	DIAGNOSIS_TYPE_LABEL,
 	PROGNOSIS_OPTIONS,
 } from '@/constants/clinical';
+import { useAppointmentOptions } from '@/hooks/use-consultation-options';
 import type { ConsultationRecord } from '@/types/consultation.type';
+import { getConsultationKindLabel } from '@/utils/consultation';
 import { formatDate, formatTime } from '@/utils/date';
 import { ArrowLeft, CalendarClock, Lock } from 'lucide-react';
 import Link from 'next/link';
@@ -63,6 +64,13 @@ export function ConsultationDetail({
 	patient,
 	consultation,
 }: ConsultationDetailProps) {
+	const appointmentOptions = useAppointmentOptions(
+		patientId,
+		!!consultation.appointmentId
+	);
+	const appointmentLabel = appointmentOptions.find(
+		(option) => option.id === consultation.appointmentId
+	)?.label;
 	const prognosis = PROGNOSIS_OPTIONS.find(
 		(option) => option.value === consultation.prognosis
 	)?.label;
@@ -92,15 +100,14 @@ export function ConsultationDetail({
 				<header className="flex flex-col gap-2">
 					<div className="flex flex-wrap items-center gap-3">
 						<h2 className="font-heading text-xl font-semibold">
-							{CONSULTATION_KIND_LABEL[consultation.kind]}
+							{getConsultationKindLabel(consultation.kind)}
 						</h2>
 						<ConsultationStatusBadge status={consultation.status} />
 					</div>
 					<p className="text-sm text-muted-foreground">
 						{formatDate(consultation.occurredAt)} ·{' '}
 						{formatTime(consultation.occurredAt)} · {consultation.staffName}
-						{consultation.appointmentLabel &&
-							` · Cita: ${consultation.appointmentLabel}`}
+						{appointmentLabel && ` · Cita: ${appointmentLabel}`}
 					</p>
 				</header>
 				<Separator />

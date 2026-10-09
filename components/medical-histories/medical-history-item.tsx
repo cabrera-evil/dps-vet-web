@@ -1,22 +1,21 @@
 import { Badge } from '@/components/ui/badge';
 import { MEDICAL_HISTORY_STATUS_LABEL } from '@/constants/clinical';
 import { MedicalHistoryStatus } from '@/constants/enum';
-import type { MedicalHistoryFormValues } from '@/schemas/medical-history.schema';
 import type { MedicalHistoryEntry } from '@/types/medical-history.type';
 import { formatMonthYear } from '@/utils/date';
 import { TriangleAlert } from 'lucide-react';
 import { MedicalHistoryFormDialog } from './medical-history-form-dialog';
 
 interface MedicalHistoryItemProps {
+	petId: string;
 	entry: MedicalHistoryEntry;
 	canWrite: boolean;
-	onSave: (values: MedicalHistoryFormValues, id?: string) => void;
 }
 
 export function MedicalHistoryItem({
+	petId,
 	entry,
 	canWrite,
-	onSave,
 }: MedicalHistoryItemProps) {
 	return (
 		<li className="flex items-start justify-between gap-3 py-3">
@@ -49,7 +48,7 @@ export function MedicalHistoryItem({
 				)}
 			</div>
 			{canWrite && (
-				<MedicalHistoryFormDialog mode="edit" entry={entry} onSave={onSave} />
+				<MedicalHistoryFormDialog mode="edit" petId={petId} entry={entry} />
 			)}
 		</li>
 	);

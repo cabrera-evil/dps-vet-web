@@ -22,7 +22,7 @@ export interface PatientIdentity {
 	markings?: string;
 	microchip?: string;
 	status: ItemStatus;
-	ownerName: string;
+	ownerName?: string;
 	ownerPhone?: string;
 	ownerEmail?: string;
 }
