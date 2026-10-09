@@ -4,6 +4,7 @@ import { PetDeleteDialog } from '@/components/patients/pet-delete-dialog';
 import { PetFormDialog } from '@/components/patients/pet-form-dialog';
 import { TableSkeletonRows } from '@/components/table/table-skeleton-rows';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
@@ -17,14 +18,10 @@ import {
 import { usePetDirectory } from '@/hooks/use-pet-directory';
 import { useGet } from '@/hooks/use-rest';
 import { Pet } from '@/types/pet.type';
-import { Search } from 'lucide-react';
+import { getAgeLabel } from '@/utils/age';
+import { FileText, Search } from 'lucide-react';
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
-
-function getAgeLabel(birthDate: string) {
-	const ageMs = Date.now() - new Date(birthDate).getTime();
-	const years = Math.floor(ageMs / (1000 * 60 * 60 * 24 * 365.25));
-	return years > 0 ? `${years} años` : 'Menor a 1 año';
-}
 
 export function PatientsTable() {
 	const [query, setQuery] = useState('');
@@ -95,6 +92,17 @@ export function PatientsTable() {
 										)}
 										<TableCell className="text-right">
 											<div className="flex justify-end gap-2">
+												<Button
+													size="icon"
+													variant="outline"
+													aria-label={`Ver expediente de ${pet.name}`}
+													nativeButton={false}
+													render={
+														<Link href={`/dashboard/patients/${pet.id}`} />
+													}
+												>
+													<FileText />
+												</Button>
 												<PetFormDialog mode="edit" pet={pet} />
 												<PetDeleteDialog pet={pet} />
 											</div>

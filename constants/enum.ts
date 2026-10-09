@@ -43,3 +43,62 @@ export enum OrderStatus {
 	FULFILLED = 'FULFILLED',
 	CANCELLED = 'CANCELLED',
 }
+
+export enum PetSex {
+	MALE = 'MALE',
+	FEMALE = 'FEMALE',
+}
+
+export enum ConsultationStatus {
+	DRAFT = 'DRAFT',
+	FINALIZED = 'FINALIZED',
+	CANCELLED = 'CANCELLED',
+}
+
+export enum ConsultationKind {
+	GENERAL = 'GENERAL',
+	PREVENTIVE = 'PREVENTIVE',
+	DERMATOLOGICAL = 'DERMATOLOGICAL',
+	DIGESTIVE = 'DIGESTIVE',
+	RESPIRATORY = 'RESPIRATORY',
+	OTHER = 'OTHER',
+}
+
+export enum DiagnosisType {
+	PRESUMPTIVE = 'PRESUMPTIVE',
+	DIFFERENTIAL = 'DIFFERENTIAL',
+	CONFIRMED = 'CONFIRMED',
+}
+
+export enum DiagnosisStatus {
+	UNDER_EVALUATION = 'UNDER_EVALUATION',
+	ACTIVE = 'ACTIVE',
+	CONTROLLED = 'CONTROLLED',
+	RESOLVED = 'RESOLVED',
+}
+
+export enum DiagnosisSeverity {
+	MILD = 'MILD',
+	MODERATE = 'MODERATE',
+	SEVERE = 'SEVERE',
+}
+
+export enum MedicalHistoryType {
+	MEDICAL = 'MEDICAL',
+	SURGICAL = 'SURGICAL',
+	REPRODUCTIVE = 'REPRODUCTIVE',
+	OTHER = 'OTHER',
+}
+
+export enum MedicalHistoryStatus {
+	ACTIVE = 'ACTIVE',
+	CHRONIC = 'CHRONIC',
+	CONTROLLED = 'CONTROLLED',
+	RESOLVED = 'RESOLVED',
+}
+
+export enum ClinicalAlertType {
+	ALLERGY = 'ALLERGY',
+	ADVERSE_REACTION = 'ADVERSE_REACTION',
+	CHRONIC_CONDITION = 'CHRONIC_CONDITION',
+}
