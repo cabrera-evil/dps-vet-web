@@ -33,3 +33,12 @@ export type FirestoreCrudRepository<T extends DocumentData> = CrudRepository<
 	FirestoreQueryOptions<T>,
 	UpdateData<T>
 >;
+
+/**
+ * Read-only Firestore repository for services that query another module's
+ * collection (ISP — no write surface is exposed).
+ */
+export type FirestoreReadRepository<T extends DocumentData> = ReadRepository<
+	T,
+	FirestoreQueryOptions<T>
+>;

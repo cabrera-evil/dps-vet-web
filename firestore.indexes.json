@@ -123,6 +123,60 @@
 				{ "fieldPath": "archived", "order": "ASCENDING" },
 				{ "fieldPath": "createdAt", "order": "DESCENDING" }
 			]
+		},
+		{
+			"collectionGroup": "clinical-encounters",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "petId", "order": "ASCENDING" },
+				{ "fieldPath": "occurredAt", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "clinical-encounters",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "petId", "order": "ASCENDING" },
+				{ "fieldPath": "status", "order": "ASCENDING" },
+				{ "fieldPath": "occurredAt", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "clinical-measurements",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "petId", "order": "ASCENDING" },
+				{ "fieldPath": "measurementType", "order": "ASCENDING" },
+				{ "fieldPath": "measuredAt", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "diagnoses",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "petId", "order": "ASCENDING" },
+				{ "fieldPath": "occurredAt", "order": "DESCENDING" },
+				{ "fieldPath": "position", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "follow-ups",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "petId", "order": "ASCENDING" },
+				{ "fieldPath": "status", "order": "ASCENDING" },
+				{ "fieldPath": "recommendedDate", "order": "ASCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "medical-histories",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "petId", "order": "ASCENDING" },
+				{ "fieldPath": "archived", "order": "ASCENDING" },
+				{ "fieldPath": "isAlert", "order": "ASCENDING" },
+				{ "fieldPath": "createdAt", "order": "DESCENDING" }
+			]
 		}
 	]
 }
