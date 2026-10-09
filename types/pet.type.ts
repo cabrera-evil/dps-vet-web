@@ -5,7 +5,7 @@ export interface Pet {
 	ownerId: string;
 	name: string;
 	species: string;
-	breed: string;
+	breed?: string;
 	birthDate: string;
 	notes?: string;
 	sex?: PetSex;

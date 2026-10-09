@@ -42,6 +42,8 @@ export const PET_SEX_LABEL: Record<PetSex, string> = {
 	[PetSex.FEMALE]: 'Hembra',
 };
 
+export const PET_SEX_OPTIONS = toOptions(PET_SEX_LABEL);
+
 export const CONSULTATION_STATUS_LABEL: Record<ConsultationStatus, string> = {
 	[ConsultationStatus.DRAFT]: 'Borrador',
 	[ConsultationStatus.FINALIZED]: 'Finalizada',
