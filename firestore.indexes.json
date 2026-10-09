@@ -177,6 +177,14 @@
 				{ "fieldPath": "isAlert", "order": "ASCENDING" },
 				{ "fieldPath": "createdAt", "order": "DESCENDING" }
 			]
+		},
+		{
+			"collectionGroup": "appointments",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "petId", "order": "ASCENDING" },
+				{ "fieldPath": "start", "order": "DESCENDING" }
+			]
 		}
 	]
 }

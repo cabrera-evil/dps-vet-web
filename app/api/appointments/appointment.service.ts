@@ -61,7 +61,7 @@ export class AppointmentService {
 		identity: Identity,
 		query: ListAppointmentsQuery
 	): Promise<AppointmentListResult> {
-		const { page, pageSize, status, clientId } = query;
+		const { page, pageSize, status, clientId, petId } = query;
 		const effectiveClientId = this.canManageAll(identity)
 			? clientId
 			: identity.uid;
@@ -70,6 +70,7 @@ export class AppointmentService {
 			[];
 		if (effectiveClientId)
 			clauses.push({ field: 'clientId', op: '==', value: effectiveClientId });
+		if (petId) clauses.push({ field: 'petId', op: '==', value: petId });
 		if (status) clauses.push({ field: 'status', op: '==', value: status });
 		const where = clauses.length ? clauses : undefined;
 

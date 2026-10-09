@@ -35,6 +35,7 @@ export const listAppointmentsQuerySchema = z.object({
 	pageSize: z.coerce.number().int().positive().max(100).default(20),
 	status: z.nativeEnum(AppointmentStatus).optional(),
 	clientId: z.string().optional(),
+	petId: z.string().optional(),
 });
 
 export type Appointment = z.infer<typeof appointmentSchema>;
