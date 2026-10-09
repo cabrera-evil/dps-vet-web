@@ -1,6 +1,7 @@
 import type { Seeder } from './seeder';
 import { adminSeeder } from './seeders/admin.seeder';
 import { breedSeeder } from './seeders/breed.seeder';
+import { diagnosisSeeder } from './seeders/diagnosis.seeder';
 import { medicationSeeder } from './seeders/medication.seeder';
 import { permissionSeeder } from './seeders/permission.seeder';
 import { roleSeeder } from './seeders/role.seeder';
@@ -9,7 +10,7 @@ import { speciesSeeder } from './seeders/species.seeder';
 
 // Order matters: roles reference permission codes, so permissions seed
 // first; the admin user references the ADMINISTRADOR role's permissions, so
-// it seeds last. Species/breeds/services/medications are independent catalogs and can
+// it seeds last. Species/breeds/services/medications/diagnoses are independent catalogs and can
 // seed anywhere in between.
 const seeders: Seeder[] = [
 	permissionSeeder,
@@ -18,6 +19,7 @@ const seeders: Seeder[] = [
 	breedSeeder,
 	serviceSeeder,
 	medicationSeeder,
+	diagnosisSeeder,
 	adminSeeder,
 ];
 
