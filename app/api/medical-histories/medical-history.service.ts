@@ -1,3 +1,4 @@
+import { assertClinicalStaff } from '@/app/api/_shared/http/authorization';
 import type { Identity } from '@/app/api/_shared/http/http.types';
 import type {
 	FirestoreCrudRepository,
@@ -5,8 +6,6 @@ import type {
 } from '@/app/api/_shared/repository/repository.contract';
 import type { WithId } from '@/app/api/_shared/repository/repository.types';
 import type { Pet } from '@/app/api/pets/pet.schema';
-import { Permission } from '@/constants/permission';
-import { hasPermission } from '@/utils/permission';
 import { FieldValue, type UpdateData } from 'firebase-admin/firestore';
 import createHttpError from 'http-errors';
 import type {
@@ -18,8 +17,8 @@ import type {
 import type { MedicalHistoryListResult } from './medical-history.types';
 
 /**
- * Medical-history domain logic. Clinical data is staff-only in Phase 1: every
- * operation requires {@link Permission.MEDICAL_RECORDS_MANAGE_ALL}. Histories
+ * Medical-history domain logic. Clinical data is staff-only in Phase 1 (see
+ * {@link assertClinicalStaff}). Histories
  * are archived (`archived`), never deleted. Depends only on repository
  * abstractions (DIP); concrete repositories are chosen in
  * `medical-history.module.ts`.
@@ -29,15 +28,6 @@ export class MedicalHistoryService {
 		private readonly repo: FirestoreCrudRepository<MedicalHistory>,
 		private readonly petRepo: ReadRepository<Pet>
 	) {}
-
-	private assertStaff(identity: Identity): void {
-		if (
-			!hasPermission(identity.permissions, [
-				Permission.MEDICAL_RECORDS_MANAGE_ALL,
-			])
-		)
-			throw new createHttpError.Forbidden();
-	}
 
 	private async assertPetExists(petId: string): Promise<void> {
 		if (!(await this.petRepo.exists(petId)))
@@ -56,7 +46,7 @@ export class MedicalHistoryService {
 		petId: string,
 		query: ListMedicalHistoriesQuery
 	): Promise<MedicalHistoryListResult> {
-		this.assertStaff(identity);
+		assertClinicalStaff(identity);
 		await this.assertPetExists(petId);
 
 		const { page, pageSize } = query;
@@ -91,7 +81,7 @@ export class MedicalHistoryService {
 		petId: string,
 		input: CreateMedicalHistoryInput
 	): Promise<WithId<MedicalHistory>> {
-		this.assertStaff(identity);
+		assertClinicalStaff(identity);
 		await this.assertPetExists(petId);
 
 		const now = new Date().toISOString();
@@ -112,7 +102,7 @@ export class MedicalHistoryService {
 		id: string,
 		input: UpdateMedicalHistoryInput
 	): Promise<WithId<MedicalHistory>> {
-		this.assertStaff(identity);
+		assertClinicalStaff(identity);
 		const history = await this.getById(id);
 		if (history.archived)
 			throw new createHttpError.UnprocessableEntity(
@@ -148,7 +138,7 @@ export class MedicalHistoryService {
 		identity: Identity,
 		id: string
 	): Promise<WithId<MedicalHistory>> {
-		this.assertStaff(identity);
+		assertClinicalStaff(identity);
 		const history = await this.getById(id);
 		if (history.archived) return history;
 
