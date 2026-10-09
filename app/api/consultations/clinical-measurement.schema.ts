@@ -1,9 +1,13 @@
 import { ClinicalMeasurementType } from '@/constants/enum';
 import { z } from 'zod';
 
+/** Weight in kg, shared by consultations and pet registration. */
+export const weightKgSchema = z.number().positive().max(1000);
+
+/** `encounterId` is absent for a weight recorded outside a consultation (pet registration). */
 export const clinicalMeasurementSchema = z.object({
 	petId: z.string().min(1),
-	encounterId: z.string().min(1),
+	encounterId: z.string().min(1).optional(),
 	measurementType: z.nativeEnum(ClinicalMeasurementType),
 	numericValue: z.number().positive(),
 	unit: z.string().min(1),

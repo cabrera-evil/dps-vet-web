@@ -1,19 +1,6 @@
 import { DiagnosisStatus, DiagnosisType } from '@/constants/enum';
 import { z } from 'zod';
-
-const optionalNumber = (message: string, integer = false) =>
-	z.string().refine(
-		(value) => {
-			if (!value.trim()) return true;
-			const parsed = Number(value);
-			return (
-				Number.isFinite(parsed) &&
-				parsed > 0 &&
-				(!integer || Number.isInteger(parsed))
-			);
-		},
-		{ message }
-	);
+import { optionalNumber } from './optional-number';
 
 export const diagnosisFormSchema = z.object({
 	name: z.string().trim().max(160, { message: 'Máximo 160 caracteres' }),

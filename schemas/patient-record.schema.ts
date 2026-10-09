@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const patientGeneralDataFormSchema = z.object({
 	name: z.string().trim().min(1, { message: 'Ingresa el nombre' }).max(120),
 	species: z.string().min(1, { message: 'Selecciona la especie' }),
-	breed: z.string().min(1, { message: 'Selecciona la raza' }),
+	breed: z.string(),
 	sex: z.string().min(1, { message: 'Selecciona el sexo' }),
 	sterilized: z.boolean(),
 	birthDate: z

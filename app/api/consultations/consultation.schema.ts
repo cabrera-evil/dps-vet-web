@@ -13,6 +13,7 @@ import {
 	DiagnosisType,
 } from '@/constants/enum';
 import { z } from 'zod';
+import { weightKgSchema } from './clinical-measurement.schema';
 
 const optionValue = (options: SelectOption[]) =>
 	z
@@ -32,7 +33,7 @@ const isoDate = z
 	);
 
 export const consultationMeasurementsSchema = z.object({
-	weightKg: z.number().positive().max(1000).optional(),
+	weightKg: weightKgSchema.optional(),
 	temperatureC: z.number().positive().max(60).optional(),
 	heartRateBpm: z.number().int().positive().max(1000).optional(),
 	respiratoryRateRpm: z.number().int().positive().max(500).optional(),

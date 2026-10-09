@@ -1,3 +1,4 @@
+import { weightKgSchema } from '@/app/api/consultations/clinical-measurement.schema';
 import { PetSex } from '@/constants/enum';
 import { z } from 'zod';
 
@@ -5,7 +6,7 @@ export const petSchema = z.object({
 	ownerId: z.string().min(1),
 	name: z.string().min(1).max(120),
 	species: z.string().min(1).max(60),
-	breed: z.string().min(1).max(60),
+	breed: z.string().min(1).max(60).optional(),
 	birthDate: z.string(),
 	notes: z.string().max(2000).optional(),
 	sex: z.nativeEnum(PetSex).optional(),
@@ -17,12 +18,20 @@ export const petSchema = z.object({
 });
 
 /** Client payload — `ownerId`/`createdAt` are set server-side from the caller identity. */
-export const createPetSchema = petSchema.omit({
+const petInputSchema = petSchema.omit({
 	ownerId: true,
 	createdAt: true,
 });
 
-export const updatePetSchema = createPetSchema
+/**
+ * `weightKg` is the optional weight taken at the front desk: it is not stored
+ * on the pet but as the first entry of its weight history (staff only).
+ */
+export const createPetSchema = petInputSchema.extend({
+	weightKg: weightKgSchema.optional(),
+});
+
+export const updatePetSchema = petInputSchema
 	.partial()
 	.refine((input) => Object.keys(input).length > 0, {
 		message: 'At least one field is required',
