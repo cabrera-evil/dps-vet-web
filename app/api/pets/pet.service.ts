@@ -1,12 +1,19 @@
+import { assertClinicalStaff } from '@/app/api/_shared/http/authorization';
 import type { Identity } from '@/app/api/_shared/http/http.types';
-import type { FirestoreCrudRepository } from '@/app/api/_shared/repository/repository.contract';
+import type {
+	FirestoreCrudRepository,
+	FirestoreReadRepository,
+} from '@/app/api/_shared/repository/repository.contract';
 import type {
 	FirestoreQueryOptions,
 	WithId,
 } from '@/app/api/_shared/repository/repository.types';
+import type { Breed } from '@/app/api/breeds/breed.schema';
 import { Permission } from '@/constants/permission';
 import { hasPermission } from '@/utils/permission';
+import { FieldValue, type UpdateData } from 'firebase-admin/firestore';
 import createHttpError from 'http-errors';
+import type { PetRepository } from './pet.repository';
 import type {
 	CreatePetInput,
 	ListPetsQuery,
@@ -25,7 +32,10 @@ import type { PetListResult } from './pet.types';
  * ownership filter via that permission.
  */
 export class PetService {
-	constructor(private readonly repo: FirestoreCrudRepository<Pet>) {}
+	constructor(
+		private readonly repo: PetRepository & FirestoreCrudRepository<Pet>,
+		private readonly breedRepo: FirestoreReadRepository<Breed>
+	) {}
 
 	private canManageAll(identity: Identity): boolean {
 		return hasPermission(identity.permissions, [Permission.PETS_MANAGE_ALL]);
@@ -69,12 +79,42 @@ export class PetService {
 		return pet;
 	}
 
-	create(identity: Identity, input: CreatePetInput): Promise<WithId<Pet>> {
-		return this.repo.create({
-			...input,
+	/**
+	 * Breeds are scoped per species in the `breeds` catalog. A species with
+	 * catalog breeds requires one of them; a species without any has no breed
+	 * (a breed sent for it is dropped).
+	 */
+	private async resolveBreed(
+		species: string,
+		breed?: string
+	): Promise<string | undefined> {
+		const options = await this.breedRepo.findMany({
+			where: [{ field: 'species', op: '==', value: species }],
+		});
+		if (options.length === 0) return undefined;
+		if (!breed) throw new createHttpError.BadRequest('breed is required');
+		if (!options.some((option) => option.name === breed))
+			throw new createHttpError.BadRequest(`Unknown breed for ${species}`);
+		return breed;
+	}
+
+	async create(
+		identity: Identity,
+		input: CreatePetInput
+	): Promise<WithId<Pet>> {
+		const { weightKg, ...fields } = input;
+		// Weight is clinical data: only staff may record it.
+		if (weightKg !== undefined) assertClinicalStaff(identity);
+
+		const pet: Pet = {
+			...fields,
+			breed: await this.resolveBreed(fields.species, fields.breed),
 			ownerId: identity.uid,
 			createdAt: new Date().toISOString(),
-		});
+		};
+		return weightKg === undefined
+			? this.repo.create(pet)
+			: this.repo.createWithWeight(pet, weightKg, identity.uid);
 	}
 
 	async update(
@@ -82,8 +122,19 @@ export class PetService {
 		id: string,
 		input: UpdatePetInput
 	): Promise<WithId<Pet>> {
-		await this.getById(identity, id);
-		await this.repo.update(id, input);
+		const pet = await this.getById(identity, id);
+
+		const data: UpdateData<Pet> = { ...input };
+		if (input.species !== undefined || input.breed !== undefined) {
+			const species = input.species ?? pet.species;
+			// A new species never inherits the previous species' breed.
+			const breed =
+				input.breed ?? (species === pet.species ? pet.breed : undefined);
+			data.breed =
+				(await this.resolveBreed(species, breed)) ?? FieldValue.delete();
+		}
+
+		await this.repo.update(id, data);
 		return this.getById(identity, id);
 	}
 

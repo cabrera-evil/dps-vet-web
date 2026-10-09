@@ -185,6 +185,14 @@
 				{ "fieldPath": "petId", "order": "ASCENDING" },
 				{ "fieldPath": "start", "order": "DESCENDING" }
 			]
+		},
+		{
+			"collectionGroup": "breeds",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "species", "order": "ASCENDING" },
+				{ "fieldPath": "name", "order": "ASCENDING" }
+			]
 		}
 	]
 }

@@ -1,8 +1,8 @@
-import { CatalogController } from '@/app/api/_shared/catalog/catalog.controller';
-import { CatalogRepository } from '@/app/api/_shared/catalog/catalog.repository';
-import { CatalogService } from '@/app/api/_shared/catalog/catalog.service';
+import { BreedController } from './breed.controller';
+import { BreedRepository } from './breed.repository';
+import { BreedService } from './breed.service';
 
-const repository = new CatalogRepository('breeds');
-const service = new CatalogService(repository);
+const breedRepository = new BreedRepository();
+const service = new BreedService(breedRepository);
 
-export const breedController = new CatalogController(service);
+export const breedController = new BreedController(service);
