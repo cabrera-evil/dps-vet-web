@@ -1,3 +1,4 @@
+import { PetSex } from '@/constants/enum';
 import { z } from 'zod';
 
 export const petSchema = z.object({
@@ -7,6 +8,11 @@ export const petSchema = z.object({
 	breed: z.string().min(1).max(60),
 	birthDate: z.string(),
 	notes: z.string().max(2000).optional(),
+	sex: z.nativeEnum(PetSex).optional(),
+	sterilized: z.boolean().optional(),
+	color: z.string().max(60).optional(),
+	markings: z.string().max(300).optional(),
+	microchip: z.string().max(40).optional(),
 	createdAt: z.string(),
 });
 
