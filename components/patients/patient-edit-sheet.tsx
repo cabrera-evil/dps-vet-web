@@ -15,20 +15,21 @@ import {
 } from '@/components/ui/sheet';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { PET_SEX_LABEL } from '@/constants/clinical';
+import { PET_SEX_OPTIONS } from '@/constants/clinical';
 import { queryClient } from '@/constants/environment';
+import { useBreeds } from '@/hooks/use-breeds';
 import { invalidatePatientRecord } from '@/hooks/use-patient-record';
-import { useGet, usePatch } from '@/hooks/use-rest';
+import { usePatch } from '@/hooks/use-rest';
 import {
 	PatientGeneralDataFormValues,
 	patientGeneralDataFormSchema,
 } from '@/schemas/patient-record.schema';
-import type { CatalogEntry } from '@/types/catalog.type';
 import type { PatientIdentity } from '@/types/patient-record.type';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
+import { PetSpeciesBreedFields } from './pet-species-breed-fields';
 
 interface PatientEditSheetProps {
 	patient: PatientIdentity;
@@ -36,16 +37,11 @@ interface PatientEditSheetProps {
 	onOpenChange: (open: boolean) => void;
 }
 
-const SEX_OPTIONS = Object.entries(PET_SEX_LABEL).map(([value, label]) => ({
-	value,
-	label,
-}));
-
 function toFormValues(patient: PatientIdentity): PatientGeneralDataFormValues {
 	return {
 		name: patient.name,
 		species: patient.species,
-		breed: patient.breed,
+		breed: patient.breed ?? '',
 		sex: patient.sex ?? '',
 		sterilized: patient.sterilized ?? false,
 		birthDate: patient.birthDate,
@@ -61,30 +57,30 @@ export function PatientEditSheet({
 	onOpenChange,
 }: PatientEditSheetProps) {
 	const { mutateAsync: updatePet, isPending } = usePatch();
-	const { data: species } = useGet<CatalogEntry[]>({
-		path: '/species',
-		params: { pageSize: 100 },
-	});
-	const { data: breeds } = useGet<CatalogEntry[]>({
-		path: '/breeds',
-		params: { pageSize: 100 },
+	const form = useForm<PatientGeneralDataFormValues>({
+		resolver: zodResolver(patientGeneralDataFormSchema),
+		defaultValues: toFormValues(patient),
 	});
 	const {
 		register,
 		control,
 		handleSubmit,
 		reset,
+		setError,
 		formState: { errors },
-	} = useForm<PatientGeneralDataFormValues>({
-		resolver: zodResolver(patientGeneralDataFormSchema),
-		defaultValues: toFormValues(patient),
-	});
+	} = form;
+	const species = useWatch({ control, name: 'species' });
+	const { requiresBreed } = useBreeds(species);
 
 	useEffect(() => {
 		if (open) reset(toFormValues(patient));
 	}, [open, patient, reset]);
 
 	async function onSubmit(values: PatientGeneralDataFormValues) {
+		if (requiresBreed && !values.breed) {
+			setError('breed', { message: 'Selecciona la raza' });
+			return;
+		}
 		try {
 			await updatePet({ path: `/pets/${patient.id}`, payload: values });
 		} catch {
@@ -98,9 +94,6 @@ export function PatientEditSheet({
 		onOpenChange(false);
 	}
 
-	const toOptions = (entries?: CatalogEntry[]) =>
-		(entries ?? []).map((entry) => ({ value: entry.name, label: entry.name }));
-
 	return (
 		<Sheet open={open} onOpenChange={onOpenChange}>
 			<SheetContent className="w-full overflow-y-auto sm:max-w-md">
@@ -111,107 +104,94 @@ export function PatientEditSheet({
 						clínicos.
 					</SheetDescription>
 				</SheetHeader>
-				<form
-					id="patient-edit-form"
-					className="flex flex-col gap-4 px-4"
-					onSubmit={handleSubmit(onSubmit)}
-				>
-					<Field data-invalid={!!errors.name}>
-						<FieldLabel htmlFor="patient-name">Nombre</FieldLabel>
-						<Input
-							id="patient-name"
-							aria-invalid={!!errors.name}
-							{...register('name')}
-						/>
-						<FieldError errors={errors.name ? [errors.name] : undefined} />
-					</Field>
-					<div className="grid grid-cols-2 gap-4">
+				<FormProvider {...form}>
+					<form
+						id="patient-edit-form"
+						className="flex flex-col gap-4 px-4"
+						onSubmit={handleSubmit(onSubmit)}
+					>
+						<Field data-invalid={!!errors.name}>
+							<FieldLabel htmlFor="patient-name">Nombre</FieldLabel>
+							<Input
+								id="patient-name"
+								aria-invalid={!!errors.name}
+								{...register('name')}
+							/>
+							<FieldError errors={errors.name ? [errors.name] : undefined} />
+						</Field>
+						<PetSpeciesBreedFields />
 						<ClinicalSelectField
 							control={control}
-							name="species"
-							id="patient-species"
-							label="Especie"
-							options={toOptions(species)}
+							name="sex"
+							id="patient-sex"
+							label="Sexo"
+							options={PET_SEX_OPTIONS}
 						/>
-						<ClinicalSelectField
-							control={control}
-							name="breed"
-							id="patient-breed"
-							label="Raza"
-							options={toOptions(breeds)}
-						/>
-					</div>
-					<ClinicalSelectField
-						control={control}
-						name="sex"
-						id="patient-sex"
-						label="Sexo"
-						options={SEX_OPTIONS}
-					/>
-					<Field orientation="horizontal">
-						<Controller
-							name="sterilized"
-							control={control}
-							render={({ field }) => (
-								<Switch
-									id="patient-sterilized"
-									checked={field.value}
-									onCheckedChange={field.onChange}
-								/>
-							)}
-						/>
-						<FieldLabel htmlFor="patient-sterilized">
-							Esterilizado / castrado
-						</FieldLabel>
-					</Field>
-					<Field data-invalid={!!errors.birthDate}>
-						<FieldLabel htmlFor="patient-birth-date">
-							Fecha de nacimiento
-						</FieldLabel>
-						<Controller
-							name="birthDate"
-							control={control}
-							render={({ field }) => (
-								<DatePicker
-									id="patient-birth-date"
-									value={field.value}
-									onChange={field.onChange}
-									onBlur={field.onBlur}
-								/>
-							)}
-						/>
-						<FieldError
-							errors={errors.birthDate ? [errors.birthDate] : undefined}
-						/>
-					</Field>
-					<Field data-invalid={!!errors.color}>
-						<FieldLabel htmlFor="patient-color">Color (opcional)</FieldLabel>
-						<Input id="patient-color" {...register('color')} />
-						<FieldError errors={errors.color ? [errors.color] : undefined} />
-					</Field>
-					<Field data-invalid={!!errors.markings}>
-						<FieldLabel htmlFor="patient-markings">
-							Señas particulares (opcional)
-						</FieldLabel>
-						<Textarea
-							id="patient-markings"
-							rows={2}
-							{...register('markings')}
-						/>
-						<FieldError
-							errors={errors.markings ? [errors.markings] : undefined}
-						/>
-					</Field>
-					<Field data-invalid={!!errors.microchip}>
-						<FieldLabel htmlFor="patient-microchip">
-							Microchip / identificación (opcional)
-						</FieldLabel>
-						<Input id="patient-microchip" {...register('microchip')} />
-						<FieldError
-							errors={errors.microchip ? [errors.microchip] : undefined}
-						/>
-					</Field>
-				</form>
+						<Field orientation="horizontal">
+							<Controller
+								name="sterilized"
+								control={control}
+								render={({ field }) => (
+									<Switch
+										id="patient-sterilized"
+										checked={field.value}
+										onCheckedChange={field.onChange}
+									/>
+								)}
+							/>
+							<FieldLabel htmlFor="patient-sterilized">
+								Esterilizado / castrado
+							</FieldLabel>
+						</Field>
+						<Field data-invalid={!!errors.birthDate}>
+							<FieldLabel htmlFor="patient-birth-date">
+								Fecha de nacimiento
+							</FieldLabel>
+							<Controller
+								name="birthDate"
+								control={control}
+								render={({ field }) => (
+									<DatePicker
+										id="patient-birth-date"
+										value={field.value}
+										onChange={field.onChange}
+										onBlur={field.onBlur}
+									/>
+								)}
+							/>
+							<FieldError
+								errors={errors.birthDate ? [errors.birthDate] : undefined}
+							/>
+						</Field>
+						<Field data-invalid={!!errors.color}>
+							<FieldLabel htmlFor="patient-color">Color (opcional)</FieldLabel>
+							<Input id="patient-color" {...register('color')} />
+							<FieldError errors={errors.color ? [errors.color] : undefined} />
+						</Field>
+						<Field data-invalid={!!errors.markings}>
+							<FieldLabel htmlFor="patient-markings">
+								Señas particulares (opcional)
+							</FieldLabel>
+							<Textarea
+								id="patient-markings"
+								rows={2}
+								{...register('markings')}
+							/>
+							<FieldError
+								errors={errors.markings ? [errors.markings] : undefined}
+							/>
+						</Field>
+						<Field data-invalid={!!errors.microchip}>
+							<FieldLabel htmlFor="patient-microchip">
+								Microchip / identificación (opcional)
+							</FieldLabel>
+							<Input id="patient-microchip" {...register('microchip')} />
+							<FieldError
+								errors={errors.microchip ? [errors.microchip] : undefined}
+							/>
+						</Field>
+					</form>
+				</FormProvider>
 				<SheetFooter>
 					<Button type="submit" form="patient-edit-form" disabled={isPending}>
 						Guardar cambios

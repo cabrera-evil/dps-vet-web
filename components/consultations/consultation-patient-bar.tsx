@@ -10,7 +10,7 @@ import { getAgeLabel } from '@/utils/age';
 export interface ConsultationPatientContext {
 	name: string;
 	species: string;
-	breed: string;
+	breed?: string;
 	birthDate: string;
 	lastWeight?: WeightMeasurement;
 	alerts: ClinicalAlert[];
@@ -52,9 +52,14 @@ export function ConsultationPatientBar({
 							{patient.name}
 						</p>
 						<p className="text-xs text-muted-foreground">
-							{patient.species} · {patient.breed} ·{' '}
-							{getAgeLabel(patient.birthDate)}
-							{patient.lastWeight && ` · ${patient.lastWeight.valueKg} kg`}
+							{[
+								patient.species,
+								patient.breed,
+								getAgeLabel(patient.birthDate),
+								patient.lastWeight && `${patient.lastWeight.valueKg} kg`,
+							]
+								.filter(Boolean)
+								.join(' · ')}
 						</p>
 					</div>
 				</div>

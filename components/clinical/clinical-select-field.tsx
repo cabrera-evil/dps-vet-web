@@ -26,6 +26,7 @@ interface ClinicalSelectFieldProps<T extends FieldValues> {
 	id?: string;
 	placeholder?: string;
 	clearLabel?: string;
+	onValueChange?: (value: string) => void;
 	description?: string;
 	disabled?: boolean;
 	className?: string;
@@ -39,6 +40,7 @@ export function ClinicalSelectField<T extends FieldValues>({
 	id = name,
 	placeholder = 'Selecciona una opción',
 	clearLabel,
+	onValueChange,
 	description,
 	disabled,
 	className,
@@ -60,9 +62,11 @@ export function ClinicalSelectField<T extends FieldValues>({
 					<Select
 						items={items}
 						value={(field.value as string) ?? ''}
-						onValueChange={(value) =>
-							field.onChange(value === CLEAR_VALUE ? '' : value)
-						}
+						onValueChange={(value) => {
+							const next = value === null || value === CLEAR_VALUE ? '' : value;
+							field.onChange(next);
+							onValueChange?.(next);
+						}}
 						disabled={disabled}
 					>
 						<SelectTrigger

@@ -92,7 +92,7 @@ export function PatientsTable() {
 											</div>
 										</TableCell>
 										<TableCell>{pet.species}</TableCell>
-										<TableCell>{pet.breed}</TableCell>
+										<TableCell>{pet.breed ?? '—'}</TableCell>
 										<TableCell>{getAgeLabel(pet.birthDate)}</TableCell>
 										{canManageAll && (
 											<TableCell>{getOwnerName(pet.ownerId)}</TableCell>

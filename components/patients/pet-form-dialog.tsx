@@ -1,5 +1,6 @@
 'use client';
 
+import { ClinicalSelectField } from '@/components/clinical/clinical-select-field';
 import { DatePicker } from '@/components/custom/date-picker';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,30 +12,51 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from '@/components/ui/dialog';
-import { Field, FieldError, FieldLabel } from '@/components/ui/field';
+import {
+	Field,
+	FieldDescription,
+	FieldError,
+	FieldLabel,
+} from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from '@/components/ui/select';
+	InputGroup,
+	InputGroupAddon,
+	InputGroupInput,
+	InputGroupText,
+} from '@/components/ui/input-group';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { PET_SEX_OPTIONS } from '@/constants/clinical';
 import { queryClient } from '@/constants/environment';
-import { useGet, usePatch, usePost } from '@/hooks/use-rest';
+import { Permission } from '@/constants/permission';
+import { useBreeds } from '@/hooks/use-breeds';
+import { invalidatePatientRecord } from '@/hooks/use-patient-record';
+import { usePatch, usePost } from '@/hooks/use-rest';
 import { PetFormValues, petFormSchema } from '@/schemas/pet.schema';
-import { CatalogEntry } from '@/types/catalog.type';
 import { Pet } from '@/types/pet.type';
+import { hasPermission } from '@/utils/permission';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Pencil, Plus } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import { ReactElement, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
+import { PetSpeciesBreedFields } from './pet-species-breed-fields';
 
-function invalidatePets() {
-	return queryClient.invalidateQueries({ queryKey: ['/pets'] });
-}
+const DEFAULT_VALUES: PetFormValues = {
+	name: '',
+	species: '',
+	breed: '',
+	sex: '',
+	sterilized: false,
+	birthDate: '',
+	weightKg: '',
+	color: '',
+	markings: '',
+	microchip: '',
+	notes: '',
+};
 
 type PetFormDialogProps =
 	| { mode: 'create'; trigger?: ReactElement; pet?: never }
@@ -43,38 +65,29 @@ type PetFormDialogProps =
 export function PetFormDialog(props: PetFormDialogProps) {
 	const { mode, trigger } = props;
 	const [open, setOpen] = useState(false);
-	const { data: species, isLoading: isLoadingSpecies } = useGet<CatalogEntry[]>(
-		{ path: '/species', params: { pageSize: 100 } }
-	);
-	const { data: breeds, isLoading: isLoadingBreeds } = useGet<CatalogEntry[]>({
-		path: '/breeds',
-		params: { pageSize: 100 },
-	});
+	const { data: session } = useSession();
+	// Weight is clinical data: only staff can record the one taken at the front desk.
+	const canRecordWeight =
+		mode === 'create' &&
+		hasPermission(session?.user?.permissions, [
+			Permission.MEDICAL_RECORDS_MANAGE_ALL,
+		]);
 	const { mutateAsync: createPet, isPending: isCreating } = usePost();
 	const { mutateAsync: updatePet, isPending: isUpdating } = usePatch();
+	const form = useForm<PetFormValues>({
+		resolver: zodResolver(petFormSchema),
+		defaultValues: DEFAULT_VALUES,
+	});
 	const {
 		register,
 		control,
 		handleSubmit,
 		reset,
+		setError,
 		formState: { errors },
-	} = useForm<PetFormValues>({
-		resolver: zodResolver(petFormSchema),
-		defaultValues: {
-			name: '',
-			species: '',
-			breed: '',
-			birthDate: '',
-			notes: '',
-		},
-	});
-
-	const speciesItems = Object.fromEntries(
-		(species ?? []).map((entry) => [entry.name, entry.name])
-	);
-	const breedItems = Object.fromEntries(
-		(breeds ?? []).map((entry) => [entry.name, entry.name])
-	);
+	} = form;
+	const species = useWatch({ control, name: 'species' });
+	const { requiresBreed } = useBreeds(species);
 
 	function handleOpenChange(nextOpen: boolean) {
 		if (nextOpen) {
@@ -83,28 +96,49 @@ export function PetFormDialog(props: PetFormDialogProps) {
 					? {
 							name: props.pet.name,
 							species: props.pet.species,
-							breed: props.pet.breed,
+							breed: props.pet.breed ?? '',
+							sex: props.pet.sex ?? '',
+							sterilized: props.pet.sterilized ?? false,
 							birthDate: props.pet.birthDate.slice(0, 10),
+							weightKg: '',
+							color: props.pet.color ?? '',
+							markings: props.pet.markings ?? '',
+							microchip: props.pet.microchip ?? '',
 							notes: props.pet.notes ?? '',
 						}
-					: { name: '', species: '', breed: '', birthDate: '', notes: '' }
+					: DEFAULT_VALUES
 			);
 		}
 		setOpen(nextOpen);
 	}
 
-	async function onSubmit(values: PetFormValues) {
+	async function onSubmit({ weightKg, ...values }: PetFormValues) {
+		if (requiresBreed && !values.breed) {
+			setError('breed', { message: 'Selecciona la raza' });
+			return;
+		}
+
 		try {
 			if (mode === 'edit') {
 				await updatePet({ path: `/pets/${props.pet.id}`, payload: values });
 			} else {
-				await createPet({ path: '/pets', payload: values });
+				await createPet({
+					path: '/pets',
+					payload: {
+						...values,
+						weightKg:
+							canRecordWeight && weightKg ? Number(weightKg) : undefined,
+					},
+				});
 			}
 		} catch {
 			return;
 		}
 
-		await invalidatePets();
+		await Promise.all([
+			queryClient.invalidateQueries({ queryKey: ['/pets'] }),
+			mode === 'edit' ? invalidatePatientRecord(props.pet.id) : undefined,
+		]);
 		toast.success(
 			mode === 'edit' ? 'Mascota actualizada' : 'Mascota registrada'
 		);
@@ -130,7 +164,7 @@ export function PetFormDialog(props: PetFormDialogProps) {
 					))
 				}
 			/>
-			<DialogContent>
+			<DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg">
 				<DialogHeader>
 					<DialogTitle>
 						{mode === 'edit' ? 'Editar mascota' : 'Nueva mascota'}
@@ -141,98 +175,123 @@ export function PetFormDialog(props: PetFormDialogProps) {
 							: 'Registra una mascota para poder agendar citas para ella.'}
 					</DialogDescription>
 				</DialogHeader>
-				<form
-					id="pet-form"
-					className="flex flex-col gap-4"
-					onSubmit={handleSubmit(onSubmit)}
-				>
-					<Field data-invalid={!!errors.name}>
-						<FieldLabel htmlFor="name">Nombre</FieldLabel>
-						<Input id="name" {...register('name')} />
-						<FieldError errors={errors.name ? [errors.name] : undefined} />
-					</Field>
-					<div className="grid grid-cols-2 gap-4">
-						<Field data-invalid={!!errors.species}>
-							<FieldLabel htmlFor="species">Especie</FieldLabel>
-							<Controller
-								name="species"
-								control={control}
-								render={({ field }) => (
-									<Select
-										items={speciesItems}
-										value={field.value}
-										onValueChange={field.onChange}
-										disabled={isLoadingSpecies}
-									>
-										<SelectTrigger id="species" className="w-full">
-											<SelectValue placeholder="Selecciona la especie" />
-										</SelectTrigger>
-										<SelectContent>
-											{species?.map((entry) => (
-												<SelectItem key={entry.id} value={entry.name}>
-													{entry.name}
-												</SelectItem>
-											))}
-										</SelectContent>
-									</Select>
-								)}
-							/>
-							<FieldError
-								errors={errors.species ? [errors.species] : undefined}
-							/>
+				<FormProvider {...form}>
+					<form
+						id="pet-form"
+						className="flex flex-col gap-4"
+						onSubmit={handleSubmit(onSubmit)}
+					>
+						<Field data-invalid={!!errors.name}>
+							<FieldLabel htmlFor="name">Nombre</FieldLabel>
+							<Input id="name" {...register('name')} />
+							<FieldError errors={errors.name ? [errors.name] : undefined} />
 						</Field>
-						<Field data-invalid={!!errors.breed}>
-							<FieldLabel htmlFor="breed">Raza</FieldLabel>
-							<Controller
-								name="breed"
+						<PetSpeciesBreedFields />
+						<div className="grid grid-cols-2 gap-4">
+							<ClinicalSelectField
 								control={control}
-								render={({ field }) => (
-									<Select
-										items={breedItems}
-										value={field.value}
-										onValueChange={field.onChange}
-										disabled={isLoadingBreeds}
-									>
-										<SelectTrigger id="breed" className="w-full">
-											<SelectValue placeholder="Selecciona la raza" />
-										</SelectTrigger>
-										<SelectContent>
-											{breeds?.map((entry) => (
-												<SelectItem key={entry.id} value={entry.name}>
-													{entry.name}
-												</SelectItem>
-											))}
-										</SelectContent>
-									</Select>
-								)}
+								name="sex"
+								id="pet-sex"
+								label="Sexo (opcional)"
+								options={PET_SEX_OPTIONS}
+								placeholder="Sin especificar"
+								clearLabel="Sin especificar"
 							/>
-							<FieldError errors={errors.breed ? [errors.breed] : undefined} />
-						</Field>
-					</div>
-					<Field data-invalid={!!errors.birthDate}>
-						<FieldLabel htmlFor="birthDate">Fecha de nacimiento</FieldLabel>
-						<Controller
-							name="birthDate"
-							control={control}
-							render={({ field }) => (
-								<DatePicker
-									id="birthDate"
-									value={field.value}
-									onChange={field.onChange}
-									onBlur={field.onBlur}
+							<Field data-invalid={!!errors.birthDate}>
+								<FieldLabel htmlFor="birthDate">Fecha de nacimiento</FieldLabel>
+								<Controller
+									name="birthDate"
+									control={control}
+									render={({ field }) => (
+										<DatePicker
+											id="birthDate"
+											value={field.value}
+											onChange={field.onChange}
+											onBlur={field.onBlur}
+										/>
+									)}
 								/>
-							)}
-						/>
-						<FieldError
-							errors={errors.birthDate ? [errors.birthDate] : undefined}
-						/>
-					</Field>
-					<Field data-invalid={!!errors.notes}>
-						<FieldLabel htmlFor="notes">Notas (opcional)</FieldLabel>
-						<Textarea id="notes" {...register('notes')} />
-						<FieldError errors={errors.notes ? [errors.notes] : undefined} />
-					</Field>
-				</form>
+								<FieldError
+									errors={errors.birthDate ? [errors.birthDate] : undefined}
+								/>
+							</Field>
+						</div>
+						<Field orientation="horizontal">
+							<Controller
+								name="sterilized"
+								control={control}
+								render={({ field }) => (
+									<Switch
+										id="pet-sterilized"
+										checked={field.value}
+										onCheckedChange={field.onChange}
+									/>
+								)}
+							/>
+							<FieldLabel htmlFor="pet-sterilized">
+								Esterilizado / castrado
+							</FieldLabel>
+						</Field>
+						{canRecordWeight && (
+							<Field data-invalid={!!errors.weightKg}>
+								<FieldLabel htmlFor="pet-weight">Peso (opcional)</FieldLabel>
+								<InputGroup>
+									<InputGroupInput
+										id="pet-weight"
+										type="number"
+										inputMode="decimal"
+										min={0}
+										step="0.01"
+										aria-invalid={!!errors.weightKg}
+										{...register('weightKg')}
+									/>
+									<InputGroupAddon align="inline-end">
+										<InputGroupText>kg</InputGroupText>
+									</InputGroupAddon>
+								</InputGroup>
+								<FieldDescription>
+									Si ya se pesó antes de la consulta. Queda como primer registro
+									del historial de peso.
+								</FieldDescription>
+								<FieldError
+									errors={errors.weightKg ? [errors.weightKg] : undefined}
+								/>
+							</Field>
+						)}
+						<div className="grid grid-cols-2 gap-4">
+							<Field data-invalid={!!errors.color}>
+								<FieldLabel htmlFor="pet-color">Color (opcional)</FieldLabel>
+								<Input id="pet-color" {...register('color')} />
+								<FieldError
+									errors={errors.color ? [errors.color] : undefined}
+								/>
+							</Field>
+							<Field data-invalid={!!errors.microchip}>
+								<FieldLabel htmlFor="pet-microchip">
+									Microchip (opcional)
+								</FieldLabel>
+								<Input id="pet-microchip" {...register('microchip')} />
+								<FieldError
+									errors={errors.microchip ? [errors.microchip] : undefined}
+								/>
+							</Field>
+						</div>
+						<Field data-invalid={!!errors.markings}>
+							<FieldLabel htmlFor="pet-markings">
+								Señas particulares (opcional)
+							</FieldLabel>
+							<Textarea id="pet-markings" rows={2} {...register('markings')} />
+							<FieldError
+								errors={errors.markings ? [errors.markings] : undefined}
+							/>
+						</Field>
+						<Field data-invalid={!!errors.notes}>
+							<FieldLabel htmlFor="notes">Notas (opcional)</FieldLabel>
+							<Textarea id="notes" {...register('notes')} />
+							<FieldError errors={errors.notes ? [errors.notes] : undefined} />
+						</Field>
+					</form>
+				</FormProvider>
 				<DialogFooter>
 					<Button type="submit" form="pet-form" disabled={isPending}>
 						{mode === 'edit' ? 'Guardar cambios' : 'Registrar mascota'}
