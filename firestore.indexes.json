@@ -114,6 +114,15 @@
 				{ "fieldPath": "status", "order": "ASCENDING" },
 				{ "fieldPath": "createdAt", "order": "ASCENDING" }
 			]
+		},
+		{
+			"collectionGroup": "medical-histories",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "petId", "order": "ASCENDING" },
+				{ "fieldPath": "archived", "order": "ASCENDING" },
+				{ "fieldPath": "createdAt", "order": "DESCENDING" }
+			]
 		}
 	]
 }
