@@ -14,7 +14,6 @@ import type {
 	ApplicationFormValues,
 	ControlDecision,
 	ControlFormValues,
-	TreatmentFormValues,
 } from '@/schemas/treatment.schema';
 
 export interface MedicationApplication {
@@ -91,6 +90,7 @@ export interface TreatmentPlan {
 	status: TreatmentStatus;
 	startsAt: string;
 	endsAt?: string;
+	updatedAt?: string; // para detectar cambios concurrentes
 	ownerInstructions?: string; // visible para el propietario
 	internalNotes?: string; // solo personal
 	followUp?: TreatmentFollowUp; // el más reciente; los controles registrados quedan en `controls`
@@ -114,7 +114,6 @@ export interface ApplicationTarget {
 
 export interface RegisterApplicationInput extends ApplicationTarget {
 	values: ApplicationFormValues;
-	administeredByName?: string;
 }
 
 export interface SkipApplicationInput extends ApplicationTarget {
@@ -129,15 +128,7 @@ export interface CloseTreatmentInput {
 	action: CloseTreatmentAction;
 	outcome?: TreatmentOutcome;
 	reason?: string;
-}
-
-export interface CreateTreatmentsInput {
-	petId: string;
-	consultationId: string;
-	consultationLabel: string;
-	consultationAt: Date;
-	treatments: TreatmentFormValues[];
-	followUp?: { recommendedDate: string; reason: string };
+	expectedUpdatedAt?: string;
 }
 
 export interface RegisterControlInput {

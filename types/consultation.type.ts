@@ -1,3 +1,4 @@
+import type { DraftTreatment } from '@/app/api/consultations/consultation.schema';
 import {
 	ConsultationKind,
 	ConsultationStatus,
@@ -60,6 +61,7 @@ export interface ConsultationRecord extends ConsultationListItem {
 	internalNotes?: string;
 	prognosis?: string;
 	followUp?: Omit<FollowUp, 'id' | 'sourceConsultationId'>;
+	treatments: DraftTreatment[];
 	updatedAt: string;
 }
 

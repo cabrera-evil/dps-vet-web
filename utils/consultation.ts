@@ -2,6 +2,10 @@ import { CONSULTATION_KIND_LABEL } from '@/constants/clinical';
 import type { ConsultationKind } from '@/constants/enum';
 import type { ConsultationFormValues } from '@/schemas/consultation.schema';
 import type { ConsultationRecord } from '@/types/consultation.type';
+import {
+	toTreatmentFormValues,
+	toTreatmentPayload,
+} from '@/utils/treatment-payload';
 import { format, parseISO } from 'date-fns';
 
 export function getConsultationKindLabel(kind?: ConsultationKind) {
@@ -55,7 +59,7 @@ export function buildConsultationFormValues(
 		requiresFollowUp: !!consultation?.followUp,
 		followUpDate: consultation?.followUp?.recommendedDate ?? '',
 		followUpReason: consultation?.followUp?.reason ?? '',
-		treatments: [],
+		treatments: toTreatmentFormValues(consultation?.treatments ?? []),
 	};
 }
 
@@ -108,6 +112,7 @@ export function buildConsultationPayload(
 					reason: values.followUpReason,
 				}
 			: undefined,
+		treatments: toTreatmentPayload(values.treatments),
 		expectedUpdatedAt,
 	};
 }

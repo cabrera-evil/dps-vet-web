@@ -1,4 +1,7 @@
-import type { ControlDecision } from '@/schemas/treatment.schema';
+import type {
+	ControlDecision,
+	MedicationOrderFormValues,
+} from '@/schemas/treatment.schema';
 import { toOptions, type SelectOption } from './clinical';
 import {
 	AdministrationContext,
@@ -128,6 +131,8 @@ export const MAX_DURATION: Record<DurationUnit, number> = {
 	[DurationUnit.APPLICATIONS]: 200,
 };
 
+export const MAX_FREQUENCY_HOURS = 720;
+
 export const PRN_FREQUENCY = 'PRN';
 export const CUSTOM_FREQUENCY = 'CUSTOM';
 
@@ -142,6 +147,8 @@ export const FREQUENCY_OPTIONS: SelectOption[] = [
 ];
 
 export const ALREADY_REGISTERED_MESSAGE = 'Esta aplicación ya fue registrada';
+
+export const ALREADY_CLOSED_MESSAGE = 'Este tratamiento ya fue cerrado';
 
 export const CONTROL_ALREADY_REGISTERED_MESSAGE =
 	'Este control ya fue registrado';
@@ -162,8 +169,21 @@ export const INJECTABLE_ROUTES: AdministrationRoute[] = [
 	AdministrationRoute.SC,
 ];
 
-/** Temporal: id del único paciente con datos de ejemplo; se elimina al integrar con la API. */
-export const TREATMENTS_MOCK_PET_ID =
-	process.env.NEXT_PUBLIC_TREATMENTS_MOCK_PET_ID;
+export const NEW_MEDICATION: MedicationOrderFormValues = {
+	medicationId: '',
+	medicationName: '',
+	dose: '',
+	doseUnit: DoseUnit.MG,
+	route: AdministrationRoute.ORAL,
+	frequency: '',
+	customFrequencyHours: '',
+	durationValue: '',
+	durationUnit: DurationUnit.DAYS,
+	startDate: '',
+	startTime: '',
+	context: AdministrationContext.HOME,
+	firstDoseInConsultation: false,
+	instructions: '',
+};
 
 export const TREATMENT_VIEWS = ['activos', 'historial'] as const;

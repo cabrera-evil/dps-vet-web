@@ -31,7 +31,7 @@ export type ClinicalSummary = {
 	}[];
 	activeProblems: { id: string; name: string; statusLabel: string }[];
 	weightHistory: { valueKg: number; measuredAt: string }[];
-	/** Always empty until treatments exist (Phase 2). */
+	/** Open medications of the patient's active treatment plans. */
 	currentMedications: { id: string; name: string; instructions: string }[];
 	nextFollowUp?: {
 		id: string;

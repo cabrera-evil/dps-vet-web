@@ -17,7 +17,6 @@ import type {
 	PendingApplication,
 	TreatmentPlan,
 } from '@/types/treatment.type';
-import { generateId } from '@/utils/id';
 import { addDays, addHours, endOfDay, isBefore, parseISO } from 'date-fns';
 
 type Schedulable = Pick<
@@ -150,61 +149,4 @@ export function resolveFrequencyHours(
 			: values.frequency
 	);
 	return hours > 0 ? hours : undefined;
-}
-
-/** Aplicaciones programadas de una pauta; con `firstDoseAt` la primera nace completada. */
-export function buildApplications(
-	startsAt: Date,
-	order: Schedulable,
-	firstDoseAt?: Date
-): MedicationApplication[] {
-	const schedule = buildSchedule(startsAt, order);
-	return schedule.map((date, index) => {
-		const done = index === 0 && !!firstDoseAt;
-		return {
-			id: generateId(),
-			sequence: index + 1,
-			total: schedule.length,
-			scheduledAt: date.toISOString(),
-			status: done ? ApplicationStatus.COMPLETED : ApplicationStatus.SCHEDULED,
-			administeredAt: done ? firstDoseAt.toISOString() : undefined,
-		};
-	});
-}
-
-/** Convierte el medicamento del formulario en una orden con su programación. */
-export function buildMedicationOrder(
-	values: MedicationOrderFormValues,
-	consultationAt: Date
-): MedicationOrder {
-	const startsAt = new Date(`${values.startDate}T${values.startTime}`);
-	const schedulable: Schedulable = {
-		frequencyHours: resolveFrequencyHours(values),
-		durationValue: Number(values.durationValue),
-		durationUnit: values.durationUnit,
-		context: values.context,
-	};
-	const firstDoseAt =
-		values.context === AdministrationContext.CLINIC &&
-		values.firstDoseInConsultation
-			? consultationAt
-			: undefined;
-	return {
-		id: generateId(),
-		medicationId: values.medicationId,
-		medicationName: values.medicationName,
-		dose: Number(values.dose),
-		doseUnit: values.doseUnit,
-		route: values.route,
-		...schedulable,
-		startsAt: startsAt.toISOString(),
-		firstDoseInConsultation:
-			values.context === AdministrationContext.CLINIC &&
-			values.firstDoseInConsultation
-				? true
-				: undefined,
-		instructions: values.instructions,
-		status: TreatmentStatus.ACTIVE,
-		applications: buildApplications(startsAt, schedulable, firstDoseAt),
-	};
 }
