@@ -71,10 +71,6 @@ export function ConsultationTreatmentSection() {
 				<p className="text-sm text-muted-foreground">
 					Una consulta puede no tener tratamiento.
 				</p>
-				<p className="text-sm text-muted-foreground">
-					Los tratamientos se registran al finalizar la consulta; no se guardan
-					en el borrador.
-				</p>
 			</div>
 		</ConsultationSection>
 	);

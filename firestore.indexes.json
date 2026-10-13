@@ -193,6 +193,22 @@
 				{ "fieldPath": "species", "order": "ASCENDING" },
 				{ "fieldPath": "name", "order": "ASCENDING" }
 			]
+		},
+		{
+			"collectionGroup": "treatment-plans",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "petId", "order": "ASCENDING" },
+				{ "fieldPath": "startsAt", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "follow-up-controls",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "petId", "order": "ASCENDING" },
+				{ "fieldPath": "registeredAt", "order": "DESCENDING" }
+			]
 		}
 	]
 }

@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button';
 import { FollowUpStatus } from '@/constants/enum';
 import { Permission } from '@/constants/permission';
 import { usePatientClinicalSummary } from '@/hooks/use-patient-record';
-import { useTreatmentPlans } from '@/hooks/use-treatments';
+import { useFollowUpControl } from '@/hooks/use-treatments';
 import { isNotFoundError } from '@/utils/http-error';
 import { hasPermission } from '@/utils/permission';
 import {
@@ -50,7 +50,7 @@ export function FollowUpControlWorkspace({
 	const canWrite =
 		canRead && hasPermission(permissions, [Permission.MEDICAL_RECORDS_WRITE]);
 	const summaryQuery = usePatientClinicalSummary(patientId, canRead);
-	const plansQuery = useTreatmentPlans(patientId, canRead);
+	const followUpQuery = useFollowUpControl(followUpId, canRead);
 
 	if (status === 'loading') return <PatientRecordSkeleton />;
 
@@ -74,7 +74,7 @@ export function FollowUpControlWorkspace({
 			/>
 		);
 
-	const error = summaryQuery.error ?? plansQuery.error;
+	const error = summaryQuery.error ?? followUpQuery.error;
 	if (error)
 		return isNotFoundError(error) ? (
 			<PatientRecordNotice
@@ -93,7 +93,7 @@ export function FollowUpControlWorkspace({
 						variant="outline"
 						onClick={() => {
 							summaryQuery.refetch();
-							plansQuery.refetch();
+							followUpQuery.refetch();
 						}}
 					>
 						Reintentar
@@ -103,36 +103,27 @@ export function FollowUpControlWorkspace({
 		);
 
 	const summary = summaryQuery.data;
-	const plans = plansQuery.data;
-	if (!summary || !plans) return <PatientRecordSkeleton />;
+	const detail = followUpQuery.data;
+	if (!summary || !detail) return <PatientRecordSkeleton />;
 
-	const plan = plans.find((item) => item.followUp?.id === followUpId);
-	const wasRegistered = plans.some((item) =>
-		item.controls?.some((control) => control.followUpId === followUpId)
-	);
-	const summaryFollowUp =
-		summary.nextFollowUp?.id === followUpId ? summary.nextFollowUp : undefined;
-	const followUp = plan?.followUp ?? summaryFollowUp;
+	const { followUp, plans, lastControl } = detail;
 
-	if (
-		wasRegistered ||
-		(plan?.followUp && plan.followUp.status !== FollowUpStatus.PENDING)
-	)
-		return (
-			<PatientRecordNotice
-				icon={CircleCheck}
-				title="Este control ya fue registrado."
-				description="Puedes consultar lo registrado en el detalle del tratamiento."
-				action={backAction}
-			/>
-		);
-
-	if (!followUp)
+	if (followUp.petId !== patientId)
 		return (
 			<PatientRecordNotice
 				icon={FileQuestion}
 				title="No encontramos este seguimiento"
 				description="Es posible que haya sido movido o que el enlace sea incorrecto."
+				action={backAction}
+			/>
+		);
+
+	if (followUp.status !== FollowUpStatus.PENDING)
+		return (
+			<PatientRecordNotice
+				icon={CircleCheck}
+				title="Este control ya fue registrado."
+				description="Puedes consultar lo registrado en el detalle del tratamiento."
 				action={backAction}
 			/>
 		);
@@ -170,14 +161,16 @@ export function FollowUpControlWorkspace({
 				patientName={patient.name}
 				followUp={{
 					reason: followUp.reason,
-					sourceConsultationId: summaryFollowUp?.sourceConsultationId,
+					sourceConsultationId: followUp.sourceConsultationId,
 				}}
-				plan={plan}
+				plans={plans}
+				lastControl={lastControl}
 			/>
 			<FollowUpControlForm
+				key={plans.map((plan) => `${plan.id}:${plan.updatedAt}`).join('|')}
 				patientId={patientId}
 				followUp={{ id: followUp.id, reason: followUp.reason }}
-				plan={plan}
+				plans={plans}
 			/>
 		</div>
 	);

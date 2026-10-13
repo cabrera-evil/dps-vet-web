@@ -4,6 +4,7 @@ import { FollowUpRepository } from '@/app/api/consultations/follow-up.repository
 import { EncounterRepository } from '@/app/api/encounters/encounter.repository';
 import { MedicalHistoryRepository } from '@/app/api/medical-histories/medical-history.repository';
 import { PetRepository } from '@/app/api/pets/pet.repository';
+import { TreatmentPlanRepository } from '@/app/api/treatment-plans/treatment-plan.repository';
 import { UserRepository } from '@/app/api/users/user.repository';
 import { ClinicalSummaryController } from './clinical-summary.controller';
 import { ClinicalSummaryService } from './clinical-summary.service';
@@ -20,7 +21,8 @@ const service = new ClinicalSummaryService(
 	new EncounterRepository(),
 	new ClinicalMeasurementRepository(),
 	new DiagnosisRepository(),
-	new FollowUpRepository()
+	new FollowUpRepository(),
+	new TreatmentPlanRepository()
 );
 
 export const clinicalSummaryController = new ClinicalSummaryController(service);

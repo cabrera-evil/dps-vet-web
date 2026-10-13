@@ -37,11 +37,14 @@ import { buildNewMedication } from './treatment-plan-card';
 
 interface ControlTreatmentDecisionProps {
 	plan: TreatmentPlan;
+	/** Position of the plan among the follow-up's open plans. */
+	index: number;
 	pendingCount: number;
 }
 
 export function ControlTreatmentDecision({
 	plan,
+	index: planIndex,
 	pendingCount,
 }: ControlTreatmentDecisionProps) {
 	const {
@@ -49,10 +52,13 @@ export function ControlTreatmentDecision({
 		control,
 		formState: { errors },
 	} = useFormContext<ControlFormValues>();
-	const decision = useWatch({ control, name: 'decision' });
+	const prefix = `decisions.${planIndex}` as const;
+	const idPrefix = `control-${planIndex}`;
+	const decisionErrors = errors.decisions?.[planIndex];
+	const decision = useWatch({ control, name: `${prefix}.decision` });
 	const { fields, append, remove } = useFieldArray({
 		control,
-		name: 'treatments.0.medications',
+		name: `treatments.${planIndex}.medications`,
 	});
 	const {
 		data: medications,
@@ -83,8 +89,8 @@ export function ControlTreatmentDecision({
 	return (
 		<div className="flex flex-col gap-4">
 			<ControlRadioField
-				name="decision"
-				id="control-decision"
+				name={`${prefix}.decision`}
+				id={`${idPrefix}-decision`}
 				legend="Decisión sobre el tratamiento"
 				options={CONTROL_DECISION_OPTIONS}
 				onValueChange={handleDecisionChange}
@@ -92,7 +98,7 @@ export function ControlTreatmentDecision({
 			{decision === 'MODIFY' && (
 				<div className="flex flex-col gap-4 rounded-xl p-4 ring-1 ring-foreground/10">
 					<Controller
-						name="replacedOrderIds"
+						name={`${prefix}.replacedOrderIds`}
 						control={control}
 						render={({ field }) => (
 							<FieldSet>
@@ -107,7 +113,7 @@ export function ControlTreatmentDecision({
 								{activeOrders.map((order) => (
 									<Field key={order.id} orientation="horizontal">
 										<Checkbox
-											id={`control-replace-${order.id}`}
+											id={`${idPrefix}-replace-${order.id}`}
 											checked={field.value.includes(order.id)}
 											onCheckedChange={(checked) =>
 												field.onChange(
@@ -117,15 +123,15 @@ export function ControlTreatmentDecision({
 												)
 											}
 										/>
-										<FieldLabel htmlFor={`control-replace-${order.id}`}>
+										<FieldLabel htmlFor={`${idPrefix}-replace-${order.id}`}>
 											{order.medicationName} · {formatOrderLine(order)}
 										</FieldLabel>
 									</Field>
 								))}
 								<FieldError
 									errors={
-										errors.replacedOrderIds
-											? [{ message: errors.replacedOrderIds.message }]
+										decisionErrors?.replacedOrderIds
+											? [{ message: decisionErrors.replacedOrderIds.message }]
 											: undefined
 									}
 								/>
@@ -133,20 +139,20 @@ export function ControlTreatmentDecision({
 						)}
 					/>
 					<ClinicalTextarea
-						id="control-stop-reason"
+						id={`${idPrefix}-stop-reason`}
 						label="Motivo del cambio"
 						required
 						rows={2}
 						maxLength={300}
 						className="min-h-16"
-						error={errors.stopReason}
-						{...register('stopReason')}
+						error={decisionErrors?.stopReason}
+						{...register(`${prefix}.stopReason`)}
 					/>
 					<h4 className="text-sm font-medium">Nueva indicación</h4>
 					{fields.map((field, index) => (
 						<MedicationOrderFields
 							key={field.id}
-							treatmentIndex={0}
+							treatmentIndex={planIndex}
 							index={index}
 							medicationOptions={medicationOptions}
 							medicationsLoading={isLoading}
@@ -157,8 +163,12 @@ export function ControlTreatmentDecision({
 							hideFirstDose
 						/>
 					))}
-					{errors.treatments?.message && (
-						<FieldError errors={[{ message: errors.treatments.message }]} />
+					{errors.treatments?.[planIndex]?.medications?.message && (
+						<FieldError
+							errors={[
+								{ message: errors.treatments[planIndex].medications.message },
+							]}
+						/>
 					)}
 					<div>
 						<Button
@@ -176,20 +186,20 @@ export function ControlTreatmentDecision({
 				<div className="flex flex-col gap-4 rounded-xl p-4 ring-1 ring-foreground/10">
 					<ClinicalSelectField
 						control={control}
-						name="outcome"
-						id="control-outcome"
+						name={`${prefix}.outcome`}
+						id={`${idPrefix}-outcome`}
 						label="Resultado"
 						options={TREATMENT_OUTCOME_OPTIONS}
 						placeholder="Selecciona el resultado"
 					/>
 					<ClinicalTextarea
-						id="control-outcome-notes"
+						id={`${idPrefix}-outcome-notes`}
 						label="Observaciones finales (opcional)"
 						rows={2}
 						maxLength={500}
 						className="min-h-16"
-						error={errors.outcomeNotes}
-						{...register('outcomeNotes')}
+						error={decisionErrors?.outcomeNotes}
+						{...register(`${prefix}.outcomeNotes`)}
 					/>
 					{pendingCount > 0 && (
 						<Alert>

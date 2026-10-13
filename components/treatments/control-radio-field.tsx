@@ -13,7 +13,7 @@ import type { ControlFormValues } from '@/schemas/treatment.schema';
 import { Controller, useFormContext } from 'react-hook-form';
 
 interface ControlRadioFieldProps {
-	name: 'evolution' | 'decision';
+	name: 'evolution' | `decisions.${number}.decision`;
 	id: string;
 	legend: string;
 	options: SelectOption[];

@@ -7,6 +7,7 @@ import type { FollowUp } from '@/app/api/consultations/follow-up.schema';
 import type { ClinicalEncounter } from '@/app/api/encounters/encounter.schema';
 import type { MedicalHistory } from '@/app/api/medical-histories/medical-history.schema';
 import type { Pet } from '@/app/api/pets/pet.schema';
+import type { TreatmentPlanRepository } from '@/app/api/treatment-plans/treatment-plan.repository';
 import type { User } from '@/app/api/users/user.schema';
 import { DIAGNOSIS_STATUS_LABEL } from '@/constants/clinical';
 import {
@@ -15,7 +16,13 @@ import {
 	DiagnosisStatus,
 	FollowUpStatus,
 	ItemStatus,
+	TreatmentStatus,
 } from '@/constants/enum';
+import {
+	formatDose,
+	formatDuration,
+	formatFrequency,
+} from '@/utils/treatment-format';
 import createHttpError from 'http-errors';
 import {
 	RECENT_DIAGNOSES_LIMIT,
@@ -39,7 +46,8 @@ export class ClinicalSummaryService {
 		private readonly encounterRepo: FirestoreReadRepository<ClinicalEncounter>,
 		private readonly measurementRepo: FirestoreReadRepository<ClinicalMeasurement>,
 		private readonly diagnosisRepo: FirestoreReadRepository<Diagnosis>,
-		private readonly followUpRepo: FirestoreReadRepository<FollowUp>
+		private readonly followUpRepo: FirestoreReadRepository<FollowUp>,
+		private readonly planRepo: Pick<TreatmentPlanRepository, 'findByPet'>
 	) {}
 
 	async get(identity: Identity, petId: string): Promise<ClinicalSummary> {
@@ -54,6 +62,7 @@ export class ClinicalSummaryService {
 			weights,
 			followUp,
 			lastConsultation,
+			plans,
 		] = await Promise.all([
 			this.userRepo.findById(pet.ownerId),
 			this.historyRepo.findMany({
@@ -89,11 +98,6 @@ export class ClinicalSummaryService {
 				where: [
 					{ field: 'petId', op: '==', value: petId },
 					{ field: 'status', op: '==', value: FollowUpStatus.PENDING },
-					{
-						field: 'recommendedDate',
-						op: '>=',
-						value: this.followUpFromDate(),
-					},
 				],
 				orderBy: [{ field: 'recommendedDate', direction: 'asc' }],
 			}),
@@ -108,6 +112,7 @@ export class ClinicalSummaryService {
 				],
 				orderBy: [{ field: 'occurredAt', direction: 'desc' }],
 			}),
+			this.planRepo.findByPet(petId),
 		]);
 
 		return {
@@ -145,7 +150,7 @@ export class ClinicalSummaryService {
 				valueKg: weight.numericValue,
 				measuredAt: weight.measuredAt,
 			})),
-			currentMedications: [],
+			currentMedications: this.toCurrentMedications(plans),
 			nextFollowUp: followUp
 				? {
 						id: followUp.id,
@@ -158,11 +163,25 @@ export class ClinicalSummaryService {
 		};
 	}
 
-	/** Yesterday (UTC), so a follow-up due today is still shown in any timezone. */
-	private followUpFromDate(): string {
-		return new Date(Date.now() - 24 * 60 * 60 * 1000)
-			.toISOString()
-			.slice(0, 10);
+	/** Open medications of active plans, as one readable line each. */
+	private toCurrentMedications(
+		plans: Awaited<ReturnType<TreatmentPlanRepository['findByPet']>>
+	): ClinicalSummary['currentMedications'] {
+		return plans
+			.filter((plan) => plan.status === TreatmentStatus.ACTIVE)
+			.flatMap((plan) =>
+				plan.orders
+					.filter((order) => order.status === TreatmentStatus.ACTIVE)
+					.map((order) => ({
+						id: order.id,
+						name: order.medicationName,
+						instructions: [
+							formatDose(order),
+							formatFrequency(order.frequencyHours),
+							formatDuration(order),
+						].join(' · '),
+					}))
+			);
 	}
 
 	/** Latest state per diagnosis name; a later "resolved" entry closes an older active one. */

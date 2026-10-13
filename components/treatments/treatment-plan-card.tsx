@@ -6,39 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import type { SelectOption } from '@/constants/clinical';
-import {
-	AdministrationContext,
-	AdministrationRoute,
-	DoseUnit,
-	DurationUnit,
-} from '@/constants/enum';
+import { NEW_MEDICATION } from '@/constants/treatment';
 import type { ConsultationFormValues } from '@/schemas/consultation.schema';
-import type {
-	MedicationOrderFormValues,
-	TreatmentFormValues,
-} from '@/schemas/treatment.schema';
+import type { TreatmentFormValues } from '@/schemas/treatment.schema';
 import { format } from 'date-fns';
 import { Plus, Trash2 } from 'lucide-react';
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 import { MedicationOrderFields } from './medication-order-fields';
 import { OwnerVisibilityNote } from './owner-visibility-note';
-
-const NEW_MEDICATION: MedicationOrderFormValues = {
-	medicationId: '',
-	medicationName: '',
-	dose: '',
-	doseUnit: DoseUnit.MG,
-	route: AdministrationRoute.ORAL,
-	frequency: '',
-	customFrequencyHours: '',
-	durationValue: '',
-	durationUnit: DurationUnit.DAYS,
-	startDate: '',
-	startTime: '',
-	context: AdministrationContext.HOME,
-	firstDoseInConsultation: false,
-	instructions: '',
-};
 
 const NEW_TREATMENT: Omit<TreatmentFormValues, 'medications'> = {
 	diagnosis: '',

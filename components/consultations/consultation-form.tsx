@@ -21,14 +21,14 @@ import {
 	BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
-import { ConsultationKind, ConsultationStatus } from '@/constants/enum';
+import { ConsultationStatus } from '@/constants/enum';
 import { useConsultationOptions } from '@/hooks/use-consultation-options';
 import {
 	invalidateConsultation,
 	invalidatePatientRecord,
 } from '@/hooks/use-patient-record';
 import { usePatch, usePost } from '@/hooks/use-rest';
-import { useCreateTreatmentsFromConsultation } from '@/hooks/use-treatments';
+import { invalidatePlans } from '@/hooks/use-treatments';
 import {
 	ConsultationFormValues,
 	consultationDraftSchema,
@@ -38,9 +38,7 @@ import type { ConsultationRecord } from '@/types/consultation.type';
 import {
 	buildConsultationFormValues,
 	buildConsultationPayload,
-	getConsultationKindLabel,
 } from '@/utils/consultation';
-import { formatDate } from '@/utils/date';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
 import { CircleAlert, CircleCheck, TriangleAlert } from 'lucide-react';
@@ -90,8 +88,6 @@ export function ConsultationForm({
 		usePatch<ConsultationRecord>();
 	const { mutateAsync: finalizeConsultation, isPending: isFinalizing } =
 		usePost<ConsultationRecord>();
-	const { mutateAsync: createTreatments, isPending: isCreatingTreatments } =
-		useCreateTreatmentsFromConsultation();
 	const [confirmOpen, setConfirmOpen] = useState(false);
 	const [saveError, setSaveError] = useState<string | null>(null);
 	const [updatedAt, setUpdatedAt] = useState(consultation?.updatedAt);
@@ -108,8 +104,7 @@ export function ConsultationForm({
 	} = methods;
 	const expedienteHref = `/dashboard/patients/${patientId}?tab=consultas`;
 	const errorCount = Object.keys(errors).length;
-	const isBusy =
-		isCreating || isUpdating || isFinalizing || isCreatingTreatments;
+	const isBusy = isCreating || isUpdating || isFinalizing;
 	const currentUserId = session?.user?.uid;
 
 	useEffect(() => {
@@ -160,25 +155,11 @@ export function ConsultationForm({
 		}
 	}
 
-	function warnTreatmentsNotSaved() {
-		if (consultation)
-			toast.warning('Borrador guardado', {
-				description:
-					'Los tratamientos se mantienen en el formulario y se registran al finalizar la consulta.',
-			});
-		else
-			toast.warning('Borrador guardado sin tratamientos', {
-				description:
-					'Los tratamientos solo se registran al finalizar la consulta; vuelve a agregarlos.',
-			});
-	}
-
 	async function handleSaveDraft() {
 		const saved = await saveDraft();
 		if (!saved) return;
 		await invalidatePatientRecord(patientId);
-		if (getValues('treatments').length) warnTreatmentsNotSaved();
-		else toast.success('Borrador guardado');
+		toast.success('Borrador guardado');
 		if (!consultation)
 			router.replace(
 				`/dashboard/patients/${patientId}/consultations/${saved.id}`
@@ -196,39 +177,6 @@ export function ConsultationForm({
 			})
 	);
 
-	async function createPendingTreatments(consultationId: string) {
-		const {
-			treatments,
-			date,
-			time,
-			kind,
-			requiresFollowUp,
-			followUpDate,
-			followUpReason,
-		} = getValues();
-		if (!treatments.length) return;
-		const consultationAt = new Date(`${date}T${time}`);
-		const kindLabel = getConsultationKindLabel(
-			(kind || undefined) as ConsultationKind | undefined
-		);
-		try {
-			await createTreatments({
-				petId: patientId,
-				consultationId,
-				consultationLabel: `${kindLabel} · ${formatDate(consultationAt.toISOString())}`,
-				consultationAt,
-				treatments,
-				followUp: requiresFollowUp
-					? { recommendedDate: followUpDate, reason: followUpReason }
-					: undefined,
-			});
-		} catch {
-			toast.error('No se pudieron registrar los tratamientos', {
-				description: 'La consulta sí se finalizó.',
-			});
-		}
-	}
-
 	async function confirmFinalize() {
 		setConfirmOpen(false);
 		const saved = await saveDraft();
@@ -238,7 +186,6 @@ export function ConsultationForm({
 				path: `/consultations/${saved.id}/finalize`,
 			});
 		} catch {
-			if (getValues('treatments').length) warnTreatmentsNotSaved();
 			// The draft exists now; moving to it prevents creating a duplicate on retry.
 			if (!consultation)
 				router.replace(
@@ -246,9 +193,9 @@ export function ConsultationForm({
 				);
 			return;
 		}
-		await createPendingTreatments(saved.id);
 		await Promise.all([
 			invalidatePatientRecord(patientId),
+			invalidatePlans(patientId),
 			invalidateConsultation(saved.id),
 		]);
 		toast.success('Consulta finalizada', {

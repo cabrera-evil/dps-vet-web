@@ -4,8 +4,12 @@ import type { FirestoreReadRepository } from '@/app/api/_shared/repository/repos
 import type { RoleDocument } from '@/app/api/_shared/repository/role.types';
 import type { Appointment } from '@/app/api/appointments/appointment.schema';
 import type { ClinicalEncounter } from '@/app/api/encounters/encounter.schema';
+import type { Medication } from '@/app/api/medications/medication.schema';
 import type { Pet } from '@/app/api/pets/pet.schema';
+import { buildPlanWrites } from '@/app/api/treatment-plans/treatment-plan.builder';
+import type { CreateTreatmentInput } from '@/app/api/treatment-plans/treatment-plan.schema';
 import type { User } from '@/app/api/users/user.schema';
+import { CONSULTATION_KIND_LABEL } from '@/constants/clinical';
 import {
 	ClinicalEncounterType,
 	ClinicalMeasurementType,
@@ -13,6 +17,7 @@ import {
 	FollowUpStatus,
 } from '@/constants/enum';
 import { Permission } from '@/constants/permission';
+import { formatClinicDate } from '@/utils/date';
 import { hasPermission } from '@/utils/permission';
 import createHttpError from 'http-errors';
 import { MEASUREMENT_SOURCES } from './clinical-measurement.schema';
@@ -30,6 +35,33 @@ import type {
 } from './consultation.types';
 
 type Staff = { id: string; name: string };
+type MedicationNames = ReadonlyMap<string, string>;
+
+// Firestore allows 500 writes per transaction; keep headroom.
+const MAX_FINALIZATION_WRITES = 450;
+
+const countWrites = (writes: FinalizationWrites): number =>
+	1 +
+	writes.measurements.length +
+	writes.diagnoses.length +
+	(writes.followUp ? 1 : 0) +
+	writes.plans.length +
+	writes.administrations.length;
+
+export function assertWithinWriteLimit(writes: FinalizationWrites): void {
+	if (countWrites(writes) > MAX_FINALIZATION_WRITES)
+		throw new createHttpError.UnprocessableEntity(
+			'Too many scheduled applications for one operation'
+		);
+}
+
+const distinctMedicationIds = (treatments: CreateTreatmentInput): string[] => [
+	...new Set(
+		treatments.flatMap((plan) =>
+			plan.medications.map((medication) => medication.medicationId)
+		)
+	),
+];
 
 /**
  * Consultation domain logic: a draft is freely editable by any staff member
@@ -44,7 +76,8 @@ export class ConsultationService {
 		private readonly petRepo: FirestoreReadRepository<Pet>,
 		private readonly appointmentRepo: FirestoreReadRepository<Appointment>,
 		private readonly userRepo: FirestoreReadRepository<User>,
-		private readonly roleRepo: FirestoreReadRepository<RoleDocument>
+		private readonly roleRepo: FirestoreReadRepository<RoleDocument>,
+		private readonly medicationRepo: FirestoreReadRepository<Medication>
 	) {}
 
 	private async assertPetExists(petId: string): Promise<void> {
@@ -73,6 +106,23 @@ export class ConsultationService {
 				'The selected user cannot attend consultations'
 			);
 		return { id: staffId, name: user.name };
+	}
+
+	/** Every prescribed medication must exist and be active; returns id -> name. */
+	private async resolveMedicationNames(
+		treatments: CreateTreatmentInput
+	): Promise<MedicationNames> {
+		const entries = await Promise.all(
+			distinctMedicationIds(treatments).map(async (medicationId) => {
+				const medication = await this.medicationRepo.findById(medicationId);
+				if (!medication?.active)
+					throw new createHttpError.UnprocessableEntity(
+						`Medication not available: ${medicationId}`
+					);
+				return [medicationId, medication.name] as const;
+			})
+		);
+		return new Map(entries);
 	}
 
 	private async getSnapshot(id: string): Promise<{
@@ -114,6 +164,7 @@ export class ConsultationService {
 			internalNotes: consultation.internalNotes,
 			prognosis: consultation.prognosis,
 			followUp: consultation.followUp,
+			treatments: consultation.treatments ?? [],
 			mainDiagnosis: encounter.mainDiagnosis,
 			requiresFollowUp: encounter.requiresFollowUp,
 			createdAt: encounter.createdAt,
@@ -237,10 +288,13 @@ export class ConsultationService {
 				`Cannot finalize a consultation with status ${snapshot.encounter.status}`
 			);
 		// Fails with per-field errors (400); re-checked inside the transaction.
-		finalizeConsultationSchema.parse(this.toFinalizationCandidate(snapshot));
+		const { treatments } = finalizeConsultationSchema.parse(
+			this.toFinalizationCandidate(snapshot)
+		);
+		const medicationNames = await this.resolveMedicationNames(treatments);
 
 		await this.repo.finalizeDraft(id, (current) =>
-			this.buildFinalization(identity, id, current)
+			this.buildFinalization(identity, id, current, medicationNames)
 		);
 		return this.getById(identity, id);
 	}
@@ -266,29 +320,56 @@ export class ConsultationService {
 			noDefinedDiagnosis: consultation.noDefinedDiagnosis,
 			measurements: consultation.measurements,
 			followUp: consultation.followUp,
+			treatments: consultation.treatments ?? [],
 		};
 	}
 
 	private buildFinalization(
 		identity: Identity,
 		id: string,
-		snapshot: ConsultationSnapshot
+		snapshot: ConsultationSnapshot,
+		medicationNames: MedicationNames
 	): FinalizationWrites {
 		const { encounter, consultation } = snapshot;
-		if (
-			!finalizeConsultationSchema.safeParse(
-				this.toFinalizationCandidate(snapshot)
-			).success
-		)
+		const parsed = finalizeConsultationSchema.safeParse(
+			this.toFinalizationCandidate(snapshot)
+		);
+		if (!parsed.success)
 			throw new createHttpError.Conflict(
 				'The consultation changed and no longer meets the finalization requirements'
+			);
+		const { treatments } = parsed.data;
+		const medicationIds = distinctMedicationIds(treatments);
+		if (
+			medicationIds.some((medicationId) => !medicationNames.has(medicationId))
+		)
+			throw new createHttpError.Conflict(
+				'The consultation changed and its medications were not validated'
 			);
 
 		const now = new Date().toISOString();
 		const audit = { createdAt: now, createdBy: identity.uid };
 		const { petId, occurredAt } = encounter;
 
-		return {
+		const { plans, administrations } = treatments.length
+			? buildPlanWrites(treatments, {
+					petId,
+					encounterId: id,
+					occurredAt,
+					followUpId: consultation.followUp ? id : undefined,
+					createdBy: identity.uid,
+					staff: { id: encounter.staffId, name: encounter.staffName },
+					now,
+					medicationNames,
+					sourceConsultationLabel: `${
+						consultation.kind
+							? CONSULTATION_KIND_LABEL[consultation.kind]
+							: 'Consulta'
+					} · ${formatClinicDate(occurredAt)}`,
+				})
+			: { plans: [], administrations: [] };
+
+		const writes: FinalizationWrites = {
 			encounter: {
 				...encounter,
 				status: ConsultationStatus.FINALIZED,
@@ -339,6 +420,10 @@ export class ConsultationService {
 					...audit,
 				},
 			},
+			plans,
+			administrations,
 		};
+		assertWithinWriteLimit(writes);
+		return writes;
 	}
 }

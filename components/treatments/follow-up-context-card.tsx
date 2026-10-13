@@ -1,7 +1,7 @@
 import { ClinicalDataList } from '@/components/clinical/clinical-data-list';
 import { Badge } from '@/components/ui/badge';
 import { TreatmentStatus } from '@/constants/enum';
-import type { TreatmentPlan } from '@/types/treatment.type';
+import type { ControlRecord, TreatmentPlan } from '@/types/treatment.type';
 import { formatDate } from '@/utils/date';
 import Link from 'next/link';
 
@@ -9,24 +9,29 @@ interface FollowUpContextCardProps {
 	patientId: string;
 	patientName: string;
 	followUp: { reason: string; sourceConsultationId?: string };
-	/** Plan the follow-up belongs to; undefined when it has no treatment attached. */
-	plan?: TreatmentPlan;
+	/** Plans the follow-up belongs to; empty when it has no treatment attached. */
+	plans: TreatmentPlan[];
+	lastControl?: ControlRecord;
 }
 
 export function FollowUpContextCard({
 	patientId,
 	patientName,
 	followUp,
-	plan,
+	plans,
+	lastControl,
 }: FollowUpContextCardProps) {
-	const problem = plan?.diagnosis ?? followUp.reason;
+	const plan = plans[0];
+	const problem = plans.length
+		? [...new Set(plans.map((item) => item.diagnosis))].join(' · ')
+		: followUp.reason;
 	const sourceConsultationId =
 		plan?.sourceConsultationId || followUp.sourceConsultationId;
-	const medications = (plan?.orders ?? [])
+	const medications = plans
+		.flatMap((item) => item.orders)
 		.filter((order) => order.status === TreatmentStatus.ACTIVE)
 		.map((order) => order.medicationName)
 		.join(' + ');
-	const lastControl = plan?.controls?.at(-1);
 
 	return (
 		<section
@@ -48,13 +53,10 @@ export function FollowUpContextCard({
 								href={`/dashboard/patients/${patientId}/consultations/${sourceConsultationId}`}
 								className="underline-offset-4 hover:underline focus-visible:underline"
 							>
-								{plan
-									? `${plan.sourceConsultationLabel} · ${formatDate(plan.startsAt)}`
-									: 'Ver consulta'}
+								{plan?.sourceConsultationLabel ?? 'Ver consulta'}
 							</Link>
 						) : (
-							plan &&
-							`${plan.sourceConsultationLabel} · ${formatDate(plan.startsAt)}`
+							plan?.sourceConsultationLabel
 						),
 					},
 					{

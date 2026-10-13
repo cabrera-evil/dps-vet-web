@@ -12,7 +12,7 @@ import {
 	AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { useSkipApplication } from '@/hooks/use-treatments';
+import { invalidatePlans, useSkipApplication } from '@/hooks/use-treatments';
 import {
 	skipApplicationSchema,
 	type SkipApplicationFormValues,
@@ -60,6 +60,8 @@ export function SkipApplicationDialog({
 
 	function handleOpenChange(nextOpen: boolean) {
 		if (isSubmitting.current) return;
+		// Refreshing earlier would unmount this dialog and hide the error.
+		if (!nextOpen && submitError) void invalidatePlans(petId);
 		if (nextOpen) {
 			reset({ reason: '' });
 			setSubmitError('');

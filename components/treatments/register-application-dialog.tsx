@@ -26,7 +26,10 @@ import {
 	APPLICATION_SITE_OPTIONS,
 	DOSE_UNIT_OPTIONS,
 } from '@/constants/treatment';
-import { useRegisterApplication } from '@/hooks/use-treatments';
+import {
+	invalidatePlans,
+	useRegisterApplication,
+} from '@/hooks/use-treatments';
 import {
 	applicationFormSchema,
 	type ApplicationFormValues,
@@ -132,6 +135,8 @@ export function RegisterApplicationDialog({
 
 	function handleOpenChange(nextOpen: boolean) {
 		if (isSubmitting.current) return;
+		// Refreshing earlier would unmount this dialog and hide the error.
+		if (!nextOpen && submitError) void invalidatePlans(petId);
 		if (nextOpen) {
 			reset(buildDefaultValues(order));
 			setSubmitError('');
@@ -150,7 +155,6 @@ export function RegisterApplicationDialog({
 				orderId: order.id,
 				applicationId: application.id,
 				values,
-				administeredByName,
 			});
 		} catch (error) {
 			setSubmitError(
@@ -356,7 +360,7 @@ export function RegisterApplicationDialog({
 				</form>
 				<DialogFooter>
 					{isAlreadyRegistered ? (
-						<Button type="button" onClick={() => setOpen(false)}>
+						<Button type="button" onClick={() => handleOpenChange(false)}>
 							Cerrar
 						</Button>
 					) : (

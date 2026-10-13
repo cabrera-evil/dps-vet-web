@@ -31,13 +31,18 @@ export function PendingTodayCard({
 	const { data: plans } = useTreatmentPlans(petId);
 	const now = new Date();
 	const applications = getPendingToday(plans ?? [], now);
-	const controls = (plans ?? []).flatMap((plan) =>
-		plan.followUp?.status === FollowUpStatus.PENDING &&
-		plan.status !== TreatmentStatus.CANCELLED &&
-		!isBefore(endOfDay(now), parseISO(plan.followUp.recommendedDate))
-			? [{ plan, followUp: plan.followUp }]
-			: []
-	);
+	// Several plans of one consultation share a follow-up: one row per follow-up.
+	const controls = [
+		...new Map(
+			(plans ?? []).flatMap((plan) =>
+				plan.followUp?.status === FollowUpStatus.PENDING &&
+				plan.status !== TreatmentStatus.CANCELLED &&
+				!isBefore(endOfDay(now), parseISO(plan.followUp.recommendedDate))
+					? [[plan.followUp.id, { plan, followUp: plan.followUp }] as const]
+					: []
+			)
+		).values(),
+	];
 
 	if (applications.length === 0 && controls.length === 0) return null;
 

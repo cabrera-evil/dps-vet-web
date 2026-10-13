@@ -38,8 +38,8 @@ import { ControlTreatmentDecision } from './control-treatment-decision';
 interface FollowUpControlFormProps {
 	patientId: string;
 	followUp: { id: string; reason: string };
-	/** Plan the follow-up belongs to; undefined when the follow-up has no treatment attached. */
-	plan?: TreatmentPlan;
+	/** Plans pointing at the follow-up; empty when it has no treatment attached. */
+	plans: TreatmentPlan[];
 }
 
 const isOpen = (status: TreatmentStatus) =>
@@ -48,23 +48,27 @@ const isOpen = (status: TreatmentStatus) =>
 export function FollowUpControlForm({
 	patientId,
 	followUp,
-	plan,
+	plans: loadedPlans,
 }: FollowUpControlFormProps) {
+	// Open plans and decisions[] must come from the same snapshot; the parent remounts on changes.
+	const [plans] = useState(loadedPlans);
 	const router = useRouter();
 	const [submitError, setSubmitError] = useState('');
 	const [confirmOpen, setConfirmOpen] = useState(false);
+	const [confirmCount, setConfirmCount] = useState(0);
 	const isSubmitting = useRef(false);
 	const pendingValues = useRef<ControlFormValues | null>(null);
 	const { mutateAsync: registerControl, isPending } = useRegisterControl();
-	const openPlan = plan && isOpen(plan.status) ? plan : undefined;
-	const openOrders = (openPlan?.orders ?? []).filter((order) =>
-		isOpen(order.status)
+	const openPlans = plans.filter((plan) => isOpen(plan.status));
+	const pendingCounts = openPlans.map(
+		(plan) =>
+			plan.orders
+				.filter((order) => isOpen(order.status))
+				.flatMap((order) => order.applications)
+				.filter(
+					(application) => application.status === ApplicationStatus.SCHEDULED
+				).length
 	);
-	const pendingCount = openOrders
-		.flatMap((order) => order.applications)
-		.filter(
-			(application) => application.status === ApplicationStatus.SCHEDULED
-		).length;
 	const form = useForm<ControlFormValues>({
 		resolver: zodResolver(controlFormSchema),
 		defaultValues: {
@@ -73,14 +77,18 @@ export function FollowUpControlForm({
 			temperatureC: '',
 			observations: '',
 			treatmentResponse: '',
-			decision: 'CONTINUE',
-			stopReason: '',
-			replacedOrderIds: openOrders
-				.filter((order) => order.status === TreatmentStatus.ACTIVE)
-				.map((order) => order.id),
-			outcome: '',
-			outcomeNotes: '',
-			treatments: [{ medications: [] }],
+			decisions: openPlans.map((plan) => ({
+				planId: plan.id,
+				expectedUpdatedAt: plan.updatedAt ?? '',
+				decision: 'CONTINUE',
+				stopReason: '',
+				replacedOrderIds: plan.orders
+					.filter((order) => order.status === TreatmentStatus.ACTIVE)
+					.map((order) => order.id),
+				outcome: '',
+				outcomeNotes: '',
+			})),
+			treatments: openPlans.map(() => ({ medications: [] })),
 			requiresFollowUp: false,
 			followUpDate: '',
 			followUpReason: '',
@@ -93,11 +101,11 @@ export function FollowUpControlForm({
 		formState: { errors, isSubmitting: isFormSubmitting },
 	} = form;
 	const requiresFollowUp = useWatch({ control, name: 'requiresFollowUp' });
-	const canSave = !!plan;
-	const busy = isPending || isFormSubmitting || !canSave;
-	const backHref = plan
-		? `/dashboard/patients/${patientId}/treatments/${plan.id}`
-		: `/dashboard/patients/${patientId}?tab=resumen`;
+	const busy = isPending || isFormSubmitting;
+	const backHref =
+		openPlans.length === 1
+			? `/dashboard/patients/${patientId}/treatments/${openPlans[0].id}`
+			: `/dashboard/patients/${patientId}?tab=resumen`;
 
 	async function save(values: ControlFormValues) {
 		if (isSubmitting.current) return;
@@ -124,9 +132,14 @@ export function FollowUpControlForm({
 	}
 
 	async function onSubmit(values: ControlFormValues) {
-		if (!canSave) return;
-		if (openPlan && values.decision === 'FINISH' && pendingCount > 0) {
+		const cancelled = values.decisions.reduce(
+			(total, item, index) =>
+				item.decision === 'FINISH' ? total + pendingCounts[index] : total,
+			0
+		);
+		if (cancelled > 0) {
 			pendingValues.current = values;
+			setConfirmCount(cancelled);
 			setConfirmOpen(true);
 			return;
 		}
@@ -140,15 +153,6 @@ export function FollowUpControlForm({
 				onSubmit={handleSubmit(onSubmit)}
 				className="flex max-w-3xl flex-col gap-6"
 			>
-				{!canSave && (
-					<Alert>
-						<CircleAlert />
-						<AlertDescription>
-							Este seguimiento aún no se puede registrar: el guardado se activa
-							al integrar con la API.
-						</AlertDescription>
-					</Alert>
-				)}
 				<section className="flex flex-col gap-4" aria-labelledby="control-eval">
 					<h3 id="control-eval" className="font-heading text-sm font-medium">
 						Evolución del paciente
@@ -158,7 +162,7 @@ export function FollowUpControlForm({
 						label="Motivo del seguimiento"
 						required
 						rows={2}
-						maxLength={500}
+						maxLength={300}
 						className="min-h-16"
 						error={errors.reason}
 						{...register('reason')}
@@ -192,7 +196,7 @@ export function FollowUpControlForm({
 						error={errors.observations}
 						{...register('observations')}
 					/>
-					{openPlan && (
+					{openPlans.length > 0 && (
 						<ClinicalTextarea
 							id="control-treatment-response"
 							label="Respuesta al tratamiento"
@@ -213,16 +217,26 @@ export function FollowUpControlForm({
 					>
 						Tratamiento
 					</h3>
-					{openPlan ? (
-						<ControlTreatmentDecision
-							plan={openPlan}
-							pendingCount={pendingCount}
-						/>
+					{openPlans.length > 0 ? (
+						openPlans.map((plan, index) => (
+							<div key={plan.id} className="flex flex-col gap-4">
+								{openPlans.length > 1 && (
+									<h4 className="text-sm font-medium">{plan.diagnosis}</h4>
+								)}
+								<ControlTreatmentDecision
+									plan={plan}
+									index={index}
+									pendingCount={pendingCounts[index]}
+								/>
+							</div>
+						))
 					) : (
 						<p className="text-sm text-muted-foreground">
-							{plan
-								? 'El tratamiento relacionado ya está cerrado: no hay decisión que tomar sobre él.'
-								: 'Este seguimiento no tiene un tratamiento asociado, por lo que no hay decisión que tomar sobre él.'}
+							{plans.length > 1
+								? 'Los tratamientos relacionados ya están cerrados: no hay decisión que tomar sobre ellos.'
+								: plans.length === 1
+									? 'El tratamiento relacionado ya está cerrado: no hay decisión que tomar sobre él.'
+									: 'Este seguimiento no tiene un tratamiento asociado, por lo que no hay decisión que tomar sobre él.'}
 						</p>
 					)}
 				</section>
@@ -319,9 +333,9 @@ export function FollowUpControlForm({
 					<AlertDialogHeader>
 						<AlertDialogTitle>¿Finalizar el tratamiento?</AlertDialogTitle>
 						<AlertDialogDescription>
-							{pendingCount === 1
+							{confirmCount === 1
 								? 'Se cancelará 1 aplicación programada.'
-								: `Se cancelarán ${pendingCount} aplicaciones programadas.`}{' '}
+								: `Se cancelarán ${confirmCount} aplicaciones programadas.`}{' '}
 							El tratamiento pasará al historial.
 						</AlertDialogDescription>
 					</AlertDialogHeader>

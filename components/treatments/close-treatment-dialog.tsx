@@ -14,8 +14,11 @@ import {
 	DialogTrigger,
 } from '@/components/ui/dialog';
 import { ApplicationStatus, TreatmentOutcome } from '@/constants/enum';
-import { TREATMENT_OUTCOME_OPTIONS } from '@/constants/treatment';
-import { useCloseTreatment } from '@/hooks/use-treatments';
+import {
+	ALREADY_CLOSED_MESSAGE,
+	TREATMENT_OUTCOME_OPTIONS,
+} from '@/constants/treatment';
+import { invalidatePlans, useCloseTreatment } from '@/hooks/use-treatments';
 import {
 	closeTreatmentSchema,
 	type CloseTreatmentFormValues,
@@ -99,6 +102,9 @@ export function CloseTreatmentDialog({
 
 	function handleOpenChange(nextOpen: boolean) {
 		if (isSubmitting.current) return;
+		// Refreshing earlier would unmount this dialog and hide the error.
+		if (!nextOpen && submitError === ALREADY_CLOSED_MESSAGE)
+			void invalidatePlans(petId);
 		if (nextOpen) {
 			setSubmitError(null);
 			reset({
@@ -124,15 +130,18 @@ export function CloseTreatmentDialog({
 				action,
 				outcome: values.outcome || undefined,
 				reason: values.reason || undefined,
+				expectedUpdatedAt: plan.updatedAt,
 			});
 			toast.success(copy.success);
 			setOpen(false);
 		} catch (error) {
-			setSubmitError(
+			const message =
 				error instanceof Error
 					? error.message
-					: 'No se pudo guardar el cambio. Lo que escribiste se conserva.'
-			);
+					: 'No se pudo guardar el cambio. Lo que escribiste se conserva.';
+			setSubmitError(message);
+			// Refresh so the retry sends the current `updatedAt`; a closed plan waits for the dialog to close.
+			if (message !== ALREADY_CLOSED_MESSAGE) void invalidatePlans(petId);
 		} finally {
 			isSubmitting.current = false;
 		}

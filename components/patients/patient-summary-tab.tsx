@@ -16,7 +16,6 @@ import {
 	CLINICAL_ALERT_LABEL,
 	MEDICAL_HISTORY_STATUS_LABEL,
 } from '@/constants/clinical';
-import { useTreatmentPlans } from '@/hooks/use-treatments';
 import type { ConsultationListItem } from '@/types/consultation.type';
 import type { MedicalHistoryEntry } from '@/types/medical-history.type';
 import type { PatientClinicalSummary } from '@/types/patient-record.type';
@@ -110,10 +109,6 @@ export function PatientSummaryTab({
 	onGoToTab,
 }: PatientSummaryTabProps) {
 	const relevantHistories = histories.filter((entry) => entry.isAlert);
-	const { data: plans } = useTreatmentPlans(patientId);
-	const followUpHasPlan = !!plans?.some(
-		(plan) => plan.followUp?.id === summary.nextFollowUp?.id
-	);
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -311,7 +306,7 @@ export function PatientSummaryTab({
 										<p className="text-muted-foreground">
 											{summary.nextFollowUp.reason}
 										</p>
-										{canWrite && followUpHasPlan && (
+										{canWrite && (
 											<Button
 												variant="outline"
 												size="sm"
