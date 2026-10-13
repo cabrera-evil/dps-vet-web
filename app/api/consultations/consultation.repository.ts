@@ -3,6 +3,8 @@ import { firestore } from '@/app/api/_shared/firebase';
 import { FirestoreRepository } from '@/app/api/_shared/repository/firestore.repository';
 import { ENCOUNTERS_COLLECTION } from '@/app/api/encounters/encounter.repository';
 import type { ClinicalEncounter } from '@/app/api/encounters/encounter.schema';
+import { ADMINISTRATIONS_COLLECTION } from '@/app/api/medication-administrations/medication-administration.repository';
+import { TREATMENT_PLANS_COLLECTION } from '@/app/api/treatment-plans/treatment-plan.repository';
 import { ConsultationStatus } from '@/constants/enum';
 import createHttpError from 'http-errors';
 import { MEASUREMENTS_COLLECTION } from './clinical-measurement.repository';
@@ -83,7 +85,8 @@ export class ConsultationRepository extends FirestoreRepository<ConsultationCont
 	 * Finalizes a draft. `buildWrites` runs inside the transaction against the
 	 * documents as they are at commit time, so the service's rules apply to
 	 * what is actually being finalized; it returns the encounter update plus
-	 * the history rows (measurements, diagnoses, follow-up) to create. Row ids
+	 * the history rows (measurements, diagnoses, follow-up, treatment plans and
+	 * their applications) to create. Row ids
 	 * are deterministic, so a retry can never duplicate them.
 	 */
 	async finalizeDraft(
@@ -129,6 +132,16 @@ export class ConsultationRepository extends FirestoreRepository<ConsultationCont
 							.collection(FOLLOW_UPS_COLLECTION)
 							.doc(writes.followUp.id),
 						writes.followUp.data
+					);
+				for (const { id: rowId, data } of writes.plans)
+					transaction.set(
+						firestore().collection(TREATMENT_PLANS_COLLECTION).doc(rowId),
+						data
+					);
+				for (const { id: rowId, data } of writes.administrations)
+					transaction.set(
+						firestore().collection(ADMINISTRATIONS_COLLECTION).doc(rowId),
+						data
 					);
 			});
 		} catch (error) {

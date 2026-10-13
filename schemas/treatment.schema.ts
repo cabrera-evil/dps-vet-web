@@ -11,6 +11,7 @@ import {
 	CUSTOM_FREQUENCY,
 	INJECTABLE_ROUTES,
 	MAX_DURATION,
+	MAX_FREQUENCY_HOURS,
 	PRN_FREQUENCY,
 } from '@/constants/treatment';
 import { countApplications, resolveFrequencyHours } from '@/utils/treatment';
@@ -63,6 +64,13 @@ export const medicationOrderFormSchema = z
 			!values.customFrequencyHours.trim()
 		)
 			addIssue(ctx, 'customFrequencyHours', 'Ingresa cada cuántas horas');
+
+		if (Number(values.customFrequencyHours) > MAX_FREQUENCY_HOURS)
+			addIssue(
+				ctx,
+				'customFrequencyHours',
+				`La frecuencia no puede superar ${MAX_FREQUENCY_HOURS} horas`
+			);
 
 		if (Number(values.durationValue) > MAX_DURATION[values.durationUnit])
 			addIssue(ctx, 'durationValue', 'Duración demasiado larga');
@@ -178,29 +186,39 @@ export const CONTROL_DECISIONS = ['CONTINUE', 'MODIFY', 'FINISH'] as const;
 
 export type ControlDecision = (typeof CONTROL_DECISIONS)[number];
 
+export const planDecisionSchema = z.object({
+	planId: z.string(),
+	expectedUpdatedAt: z.string(),
+	decision: z.enum(CONTROL_DECISIONS, {
+		message: 'Selecciona la decisión sobre el tratamiento',
+	}),
+	stopReason: z.string().max(300, { message: 'Máximo 300 caracteres' }),
+	replacedOrderIds: z.array(z.string()),
+	outcome: z.union([z.nativeEnum(TreatmentOutcome), z.literal('')]),
+	outcomeNotes: z.string().max(500, { message: 'Máximo 500 caracteres' }),
+});
+
+const MAX_WEIGHT_KG = 1000;
+const MAX_TEMPERATURE_C = 60;
+
 export const controlFormSchema = z
 	.object({
 		reason: z
 			.string()
 			.trim()
 			.min(1, { message: 'Indica el motivo del control' })
-			.max(500, { message: 'Máximo 500 caracteres' }),
+			.max(300, { message: 'Máximo 300 caracteres' }),
 		evolution: z.nativeEnum(FollowUpEvolution, {
 			message: 'Selecciona la evolución',
 		}),
 		weightKg: optionalNumber('Ingresa un peso mayor a 0'),
 		temperatureC: optionalNumber('Ingresa una temperatura mayor a 0'),
-		observations: z.string().max(5000, { message: 'Máximo 5000 caracteres' }),
+		observations: z.string().max(2000, { message: 'Máximo 2000 caracteres' }),
 		treatmentResponse: z
 			.string()
 			.max(2000, { message: 'Máximo 2000 caracteres' }),
-		decision: z.enum(CONTROL_DECISIONS, {
-			message: 'Selecciona la decisión sobre el tratamiento',
-		}),
-		stopReason: z.string().max(300, { message: 'Máximo 300 caracteres' }),
-		replacedOrderIds: z.array(z.string()),
-		outcome: z.union([z.nativeEnum(TreatmentOutcome), z.literal('')]),
-		outcomeNotes: z.string().max(500, { message: 'Máximo 500 caracteres' }),
+		// Una decisión por tratamiento abierto; `treatments` conserva el mismo orden.
+		decisions: z.array(planDecisionSchema),
 		// Misma forma que la consulta para reutilizar MedicationOrderFields; se validan solo al modificar.
 		treatments: z.array(
 			z.object({ medications: z.array(z.custom<MedicationOrderFormValues>()) })
@@ -210,31 +228,56 @@ export const controlFormSchema = z
 		followUpReason: z.string().max(300, { message: 'Máximo 300 caracteres' }),
 	})
 	.superRefine((values, ctx) => {
-		if (values.decision === 'MODIFY') {
-			if (!values.replacedOrderIds.length)
-				addIssue(
-					ctx,
-					'replacedOrderIds',
-					'Selecciona al menos un medicamento a reemplazar'
-				);
-			if (!values.stopReason.trim())
-				addIssue(ctx, 'stopReason', 'Indica el motivo del cambio');
-			const medications = values.treatments[0]?.medications ?? [];
-			if (!medications.length)
-				addIssue(ctx, 'treatments', 'Agrega la nueva indicación');
-			medications.forEach((medication, index) => {
-				const parsed = medicationOrderFormSchema.safeParse(medication);
-				if (parsed.success) return;
-				parsed.error.issues.forEach((issue) =>
-					ctx.addIssue({
-						...issue,
-						path: ['treatments', 0, 'medications', index, ...issue.path],
-					})
-				);
-			});
-		}
-		if (values.decision === 'FINISH' && !values.outcome)
-			addIssue(ctx, 'outcome', 'Selecciona el resultado');
+		if (Number(values.weightKg) > MAX_WEIGHT_KG)
+			addIssue(ctx, 'weightKg', `El peso no puede superar ${MAX_WEIGHT_KG} kg`);
+		if (Number(values.temperatureC) > MAX_TEMPERATURE_C)
+			addIssue(
+				ctx,
+				'temperatureC',
+				`La temperatura no puede superar ${MAX_TEMPERATURE_C} °C`
+			);
+		values.decisions.forEach((item, index) => {
+			const issue = (path: (string | number)[], message: string) =>
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					path,
+					message,
+				});
+			const field = (name: keyof typeof item) => ['decisions', index, name];
+			if (item.decision === 'MODIFY') {
+				if (!item.replacedOrderIds.length)
+					issue(
+						field('replacedOrderIds'),
+						'Selecciona al menos un medicamento a reemplazar'
+					);
+				if (!item.stopReason.trim())
+					issue(field('stopReason'), 'Indica el motivo del cambio');
+				const medications = values.treatments[index]?.medications ?? [];
+				if (!medications.length)
+					issue(
+						['treatments', index, 'medications'],
+						'Agrega la nueva indicación'
+					);
+				medications.forEach((medication, medicationIndex) => {
+					const parsed = medicationOrderFormSchema.safeParse(medication);
+					if (parsed.success) return;
+					parsed.error.issues.forEach((error) =>
+						ctx.addIssue({
+							...error,
+							path: [
+								'treatments',
+								index,
+								'medications',
+								medicationIndex,
+								...error.path,
+							],
+						})
+					);
+				});
+			}
+			if (item.decision === 'FINISH' && !item.outcome)
+				issue(field('outcome'), 'Selecciona el resultado');
+		});
 		if (values.requiresFollowUp && !values.followUpReason.trim())
 			addIssue(ctx, 'followUpReason', 'Indica el motivo del nuevo control');
 		if (values.requiresFollowUp && !values.followUpDate)
@@ -253,4 +296,5 @@ export type TreatmentFormValues = z.infer<typeof treatmentFormSchema>;
 export type ApplicationFormValues = z.infer<typeof applicationFormSchema>;
 export type SkipApplicationFormValues = z.infer<typeof skipApplicationSchema>;
 export type CloseTreatmentFormValues = z.infer<typeof closeTreatmentSchema>;
+export type PlanDecisionFormValues = z.infer<typeof planDecisionSchema>;
 export type ControlFormValues = z.infer<typeof controlFormSchema>;

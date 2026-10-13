@@ -7,13 +7,25 @@ import {
 	type SelectOption,
 } from '@/constants/clinical';
 import {
+	AdministrationContext,
+	AdministrationRoute,
 	ConsultationKind,
 	DiagnosisSeverity,
 	DiagnosisStatus,
 	DiagnosisType,
+	DoseUnit,
+	DurationUnit,
 } from '@/constants/enum';
 import { z } from 'zod';
+import {
+	DOCUMENT_ID_PATTERN,
+	MAX_MEDICATIONS_PER_PLAN,
+	MAX_PLANS_PER_CONSULTATION,
+	createTreatmentInputSchema,
+} from '../treatment-plans/treatment-plan.schema';
 import { weightKgSchema } from './clinical-measurement.schema';
+
+const MAX_DRAFT_AMOUNT = 100000;
 
 const optionValue = (options: SelectOption[]) =>
 	z
@@ -22,7 +34,7 @@ const optionValue = (options: SelectOption[]) =>
 			message: 'Invalid option',
 		});
 
-const isoDate = z
+export const isoDate = z
 	.string()
 	.regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected YYYY-MM-DD')
 	.refine(
@@ -60,6 +72,37 @@ export const consultationFollowUpSchema = z.object({
 	reason: z.string().trim().min(1).max(300),
 });
 
+/** A draft may hold half-filled orders; finalizing parses them with the strict `treatmentPlanInputSchema`. */
+const draftMedicationSchema = z.object({
+	medicationId: z
+		.string()
+		.max(128)
+		.refine((value) => !value || DOCUMENT_ID_PATTERN.test(value), {
+			message: 'Invalid medication id',
+		})
+		.optional(),
+	dose: z.number().max(MAX_DRAFT_AMOUNT).optional(),
+	doseUnit: z.nativeEnum(DoseUnit).optional(),
+	route: z.nativeEnum(AdministrationRoute).optional(),
+	frequencyHours: z.number().max(MAX_DRAFT_AMOUNT).optional(),
+	durationValue: z.number().max(MAX_DRAFT_AMOUNT).optional(),
+	durationUnit: z.nativeEnum(DurationUnit).optional(),
+	startsAt: z.string().max(40).optional(),
+	context: z.nativeEnum(AdministrationContext).optional(),
+	firstDoseInConsultation: z.boolean().optional(),
+	instructions: z.string().max(1000).optional(),
+});
+
+export const draftTreatmentSchema = z.object({
+	diagnosis: z.string().max(300).optional(),
+	ownerInstructions: z.string().max(2000).optional(),
+	internalNotes: z.string().max(2000).optional(),
+	medications: z
+		.array(draftMedicationSchema)
+		.max(MAX_MEDICATIONS_PER_PLAN)
+		.default([]),
+});
+
 const contentFields = {
 	kind: z.nativeEnum(ConsultationKind).optional(),
 	reason: z.string().max(500).optional(),
@@ -72,6 +115,10 @@ const contentFields = {
 	internalNotes: z.string().max(5000).optional(),
 	prognosis: optionValue(PROGNOSIS_OPTIONS).optional(),
 	followUp: consultationFollowUpSchema.optional(),
+	treatments: z
+		.array(draftTreatmentSchema)
+		.max(MAX_PLANS_PER_CONSULTATION)
+		.default([]),
 };
 
 /** Clinical content of a consultation; the document id is the encounter id. */
@@ -122,6 +169,7 @@ export const finalizeConsultationSchema = z
 			mucousMembranesOther: z.string().trim().optional(),
 		}),
 		followUp: z.object({ recommendedDate: z.string() }).optional(),
+		treatments: createTreatmentInputSchema,
 	})
 	.superRefine((value, ctx) => {
 		const issue = (path: (string | number)[], message: string) =>
@@ -157,5 +205,6 @@ export type ConsultationMeasurements = z.infer<
 	typeof consultationMeasurementsSchema
 >;
 export type ConsultationDiagnosis = z.infer<typeof consultationDiagnosisSchema>;
+export type DraftTreatment = z.infer<typeof draftTreatmentSchema>;
 export type CreateConsultationInput = z.infer<typeof createConsultationSchema>;
 export type UpdateConsultationInput = z.infer<typeof updateConsultationSchema>;

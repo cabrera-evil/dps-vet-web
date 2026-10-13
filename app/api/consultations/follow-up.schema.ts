@@ -9,6 +9,9 @@ export const followUpSchema = z.object({
 	status: z.nativeEnum(FollowUpStatus),
 	createdAt: z.string(),
 	createdBy: z.string(),
+	completedAt: z.string().optional(),
+	controlId: z.string().optional(),
+	previousFollowUpId: z.string().optional(),
 });
 
 export type FollowUp = z.infer<typeof followUpSchema>;

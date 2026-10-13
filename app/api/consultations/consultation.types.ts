@@ -1,10 +1,15 @@
 import type { ClinicalEncounter } from '@/app/api/encounters/encounter.schema';
+import type {
+	MedicationAdministrationDocument,
+	TreatmentPlanDocument,
+} from '@/app/api/treatment-plans/treatment-plan.schema';
 import type { ConsultationStatus } from '@/constants/enum';
 import type { ClinicalMeasurement } from './clinical-measurement.schema';
 import type {
 	ConsultationContent,
 	ConsultationDiagnosis,
 	ConsultationMeasurements,
+	DraftTreatment,
 } from './consultation.schema';
 import type { Diagnosis } from './diagnosis.schema';
 import type { FollowUp } from './follow-up.schema';
@@ -29,6 +34,7 @@ export type ConsultationDetail = {
 	internalNotes?: string;
 	prognosis?: string;
 	followUp?: ConsultationContent['followUp'];
+	treatments: DraftTreatment[];
 	mainDiagnosis?: string;
 	requiresFollowUp: boolean;
 	createdAt: string;
@@ -52,4 +58,6 @@ export type FinalizationWrites = {
 	measurements: DocumentWrite<ClinicalMeasurement>[];
 	diagnoses: DocumentWrite<Diagnosis>[];
 	followUp?: DocumentWrite<FollowUp>;
+	plans: DocumentWrite<TreatmentPlanDocument>[];
+	administrations: DocumentWrite<MedicationAdministrationDocument>[];
 };
