@@ -17,3 +17,8 @@ pnpm-lock.yaml
 # Ignore Documentation files
 README.md
 CHANGELOG.md
+
+# local tooling output (globally git-ignored)
+.atl
+openspec
+docs/agent-orchestration
