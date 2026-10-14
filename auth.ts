@@ -27,7 +27,6 @@ const nextAuth = NextAuth({
 						name: identity.name ?? identity.email ?? identity.uid,
 						email: identity.email,
 						image: identity.picture,
-						permissions: identity.permissions,
 					};
 				} catch {
 					return null;
@@ -38,12 +37,12 @@ const nextAuth = NextAuth({
 	callbacks: {
 		jwt({ token, user }) {
 			if (user?.uid) token.uid = user.uid;
-			if (user?.permissions) token.permissions = user.permissions;
+			// Drop any permissions claim left in legacy cookies.
+			delete (token as Record<string, unknown>).permissions;
 			return token;
 		},
 		session({ session, token }) {
 			if (token?.uid) session.user.uid = token.uid;
-			if (token?.permissions) session.user.permissions = token.permissions;
 			return session;
 		},
 	},

@@ -13,6 +13,18 @@ export const protectedRoutes = [
 		requiredPermissions: [Permission.APPOINTMENTS_READ],
 	},
 	{
+		path: '/dashboard/patients/*/consultations/new',
+		requiredPermissions: [Permission.MEDICAL_RECORDS_WRITE],
+	},
+	{
+		path: '/dashboard/patients/*/treatments/*/prescription',
+		requiredPermissions: [Permission.MEDICAL_RECORDS_MANAGE_ALL],
+	},
+	{
+		path: '/dashboard/patients/*/follow-ups/*/control',
+		requiredPermissions: [Permission.MEDICAL_RECORDS_WRITE],
+	},
+	{
 		path: '/dashboard/patients/*',
 		requiredPermissions: [Permission.PETS_READ],
 	},

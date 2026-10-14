@@ -1,3 +1,4 @@
+import { getPermissions } from '@/app/api/_shared/permissions/permissions.module';
 import { getToken } from 'next-auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { Permission } from './constants/permission';
@@ -9,16 +10,31 @@ interface RouteConfig {
 	requiredPermissions: Permission[];
 }
 
+// Pattern semantics (first match wins, so list specific entries before general):
+// - no '*': exact match.
+// - only a trailing '/*': legacy prefix match (startsWith the part before '/*').
+// - a '*' in the middle: segment-wise match; each mid '*' is exactly one
+//   non-empty segment. If the pattern also ends in '/*', that tail matches any
+//   remaining path (zero or more segments); otherwise segment counts must be equal.
+//   Unmatched requests fall through to later, broader entries (fail closed).
+function matchPattern(pathname: string, path: string) {
+	if (!path.includes('*')) return pathname === path;
+	const hasTail = path.endsWith('/*');
+	const base = hasTail ? path.slice(0, -2) : path;
+	if (!base.includes('*')) return pathname.startsWith(path.replace('/*', ''));
+	const p = base.split('/');
+	const s = pathname.split('/');
+	if (hasTail ? s.length < p.length : s.length !== p.length) return false;
+	return p.every((seg, i) => (seg === '*' ? s[i] !== '' : s[i] === seg));
+}
+
 function matchRoute<T extends string | RouteConfig>(
 	pathname: string,
 	routes: T[]
 ) {
 	for (const route of routes) {
 		const path = typeof route === 'string' ? route : route.path;
-		const isMatch = path.includes('*')
-			? pathname.startsWith(path.replace('/*', ''))
-			: pathname === path;
-		if (isMatch) return route;
+		if (matchPattern(pathname, path)) return route;
 	}
 	return null;
 }
@@ -35,7 +51,6 @@ export default async function proxy(request: NextRequest) {
 	const isAuthRoute = matchRoute(pathname, authRoutes);
 	const isProtectedRoute = matchRoute(pathname, protectedRoutes);
 	const isAuthenticated = Boolean(token?.sub);
-	const userPermissions = (token?.permissions as Permission[]) ?? [];
 	// Handle public routes (redirect authenticated users)
 	if (isAuthRoute && isAuthenticated)
 		return NextResponse.redirect(new URL('/dashboard', request.nextUrl));
@@ -44,7 +59,13 @@ export default async function proxy(request: NextRequest) {
 		// First check if user is authenticated
 		if (!isAuthenticated)
 			return NextResponse.redirect(new URL('/auth/login', request.nextUrl));
-		// Then check if user has required permissions
+		// Then check CURRENT permissions (Firestore); fail closed on any error
+		let userPermissions: Permission[];
+		try {
+			userPermissions = await getPermissions(token!.sub!);
+		} catch {
+			return NextResponse.redirect(new URL('/unauthorized', request.nextUrl));
+		}
 		if (!hasPermission(userPermissions, isProtectedRoute.requiredPermissions)) {
 			// Redirect to unauthorized page or home page
 			return NextResponse.redirect(new URL('/unauthorized', request.nextUrl));

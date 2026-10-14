@@ -1,4 +1,5 @@
 import { verifyFirebaseIdToken } from '@/app/api/_shared/firebase/verify-id-token';
+import { getPermissions } from '@/app/api/_shared/permissions/permissions.module';
 import { auth } from '@/auth';
 import { Permission } from '@/constants/permission';
 import { hasPermission } from '@/utils/permission';
@@ -33,11 +34,18 @@ async function resolveIdentity(request: NextRequest): Promise<Identity | null> {
 		const idToken = authorizationHeader.slice('Bearer '.length).trim();
 		if (!idToken) return null;
 		const identity = await verifyFirebaseIdToken(idToken);
-		return { uid: identity.uid, permissions: identity.permissions };
+		// Custom claims are ignored: permissions come from Firestore only.
+		return {
+			uid: identity.uid,
+			permissions: await getPermissions(identity.uid),
+		};
 	}
 	const session = await auth();
-	if (!session?.user) return null;
-	return { uid: session.user.uid, permissions: session.user.permissions };
+	if (!session?.user?.uid) return null;
+	return {
+		uid: session.user.uid,
+		permissions: await getPermissions(session.user.uid),
+	};
 }
 
 /**
