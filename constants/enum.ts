@@ -43,3 +43,143 @@ export enum OrderStatus {
 	FULFILLED = 'FULFILLED',
 	CANCELLED = 'CANCELLED',
 }
+
+export enum PetSex {
+	MALE = 'MALE',
+	FEMALE = 'FEMALE',
+}
+
+export enum ConsultationStatus {
+	DRAFT = 'DRAFT',
+	FINALIZED = 'FINALIZED',
+	CANCELLED = 'CANCELLED',
+}
+
+export enum ConsultationKind {
+	GENERAL = 'GENERAL',
+	PREVENTIVE = 'PREVENTIVE',
+	DERMATOLOGICAL = 'DERMATOLOGICAL',
+	DIGESTIVE = 'DIGESTIVE',
+	RESPIRATORY = 'RESPIRATORY',
+	OTHER = 'OTHER',
+}
+
+export enum DiagnosisType {
+	PRESUMPTIVE = 'PRESUMPTIVE',
+	DIFFERENTIAL = 'DIFFERENTIAL',
+	CONFIRMED = 'CONFIRMED',
+}
+
+export enum DiagnosisStatus {
+	UNDER_EVALUATION = 'UNDER_EVALUATION',
+	ACTIVE = 'ACTIVE',
+	CONTROLLED = 'CONTROLLED',
+	RESOLVED = 'RESOLVED',
+}
+
+export enum DiagnosisSeverity {
+	MILD = 'MILD',
+	MODERATE = 'MODERATE',
+	SEVERE = 'SEVERE',
+}
+
+export enum MedicalHistoryType {
+	MEDICAL = 'MEDICAL',
+	SURGICAL = 'SURGICAL',
+	REPRODUCTIVE = 'REPRODUCTIVE',
+	OTHER = 'OTHER',
+}
+
+export enum MedicalHistoryStatus {
+	ACTIVE = 'ACTIVE',
+	CHRONIC = 'CHRONIC',
+	CONTROLLED = 'CONTROLLED',
+	RESOLVED = 'RESOLVED',
+}
+
+export enum ClinicalAlertType {
+	ALLERGY = 'ALLERGY',
+	ADVERSE_REACTION = 'ADVERSE_REACTION',
+	CHRONIC_CONDITION = 'CHRONIC_CONDITION',
+}
+
+export enum ClinicalEncounterType {
+	CONSULTATION = 'CONSULTATION',
+}
+
+export enum ClinicalMeasurementType {
+	WEIGHT = 'WEIGHT',
+	TEMPERATURE = 'TEMPERATURE',
+	HEART_RATE = 'HEART_RATE',
+	RESPIRATORY_RATE = 'RESPIRATORY_RATE',
+}
+
+export enum FollowUpStatus {
+	PENDING = 'PENDING',
+	COMPLETED = 'COMPLETED',
+	CANCELLED = 'CANCELLED',
+}
+
+export enum TreatmentStatus {
+	PLANNED = 'PLANNED',
+	ACTIVE = 'ACTIVE',
+	COMPLETED = 'COMPLETED',
+	SUSPENDED = 'SUSPENDED',
+	CANCELLED = 'CANCELLED',
+}
+
+export enum ApplicationStatus {
+	SCHEDULED = 'SCHEDULED',
+	COMPLETED = 'COMPLETED',
+	SKIPPED = 'SKIPPED',
+	CANCELLED = 'CANCELLED',
+}
+
+export enum AdministrationContext {
+	HOME = 'HOME',
+	CLINIC = 'CLINIC',
+}
+
+export enum DurationUnit {
+	DAYS = 'DAYS',
+	WEEKS = 'WEEKS',
+	APPLICATIONS = 'APPLICATIONS',
+}
+
+export enum AdministrationRoute {
+	ORAL = 'ORAL',
+	IM = 'IM',
+	IV = 'IV',
+	SC = 'SC',
+	TOPICAL = 'TOPICAL',
+	OTHER = 'OTHER',
+}
+
+export enum DoseUnit {
+	MG = 'MG',
+	ML = 'ML',
+	TABLET = 'TABLET',
+	CAPSULE = 'CAPSULE',
+	DROPS = 'DROPS',
+	OTHER = 'OTHER',
+}
+
+export enum TreatmentOutcome {
+	COMPLETED = 'COMPLETED',
+	SUSPENDED = 'SUSPENDED',
+	CHANGED = 'CHANGED',
+	OTHER = 'OTHER',
+}
+
+export enum AdverseReactionSeverity {
+	MILD = 'MILD',
+	MODERATE = 'MODERATE',
+	SEVERE = 'SEVERE',
+}
+
+export enum FollowUpEvolution {
+	IMPROVED = 'IMPROVED',
+	UNCHANGED = 'UNCHANGED',
+	WORSENED = 'WORSENED',
+	RESOLVED = 'RESOLVED',
+}

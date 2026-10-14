@@ -4,6 +4,7 @@ import type { NextRequest, NextResponse } from 'next/server';
 import {
 	appointmentsReportQuerySchema,
 	inventoryTurnoverQuerySchema,
+	lowStockQuerySchema,
 	popularServicesQuerySchema,
 } from './report.schema';
 import type { ReportService } from './report.service';
@@ -28,5 +29,10 @@ export class ReportController {
 	async inventoryTurnover(request: NextRequest): Promise<NextResponse> {
 		const query = parseSearchParams(request, inventoryTurnoverQuerySchema);
 		return ok(await this.service.inventoryTurnover(query));
+	}
+
+	async lowStock(request: NextRequest): Promise<NextResponse> {
+		const query = parseSearchParams(request, lowStockQuerySchema);
+		return ok(await this.service.lowStock(query));
 	}
 }

@@ -8,8 +8,12 @@ export const breedSeeder: Seeder = {
 	async run() {
 		const collection = firestore().collection('breeds');
 		const batch = firestore().batch();
-		for (const name of BREED_CATALOG) {
-			batch.set(collection.doc(slug(name)), { name }, { merge: true });
+		for (const { species, name } of BREED_CATALOG) {
+			batch.set(
+				collection.doc(slug(`${species} ${name}`)),
+				{ name, species },
+				{ merge: true }
+			);
 		}
 		await batch.commit();
 	},

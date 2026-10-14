@@ -102,7 +102,7 @@ Status is a fixed state machine (`PENDING → CONFIRMED|CANCELLED`, `CONFIRMED �
 
 ## Phase 8 — `reports` module — done
 
-`GET /api/reports/appointments?from&to`, `/popular-services?from&to`, `/inventory-turnover?from&to` — admin-only, aggregated in the service layer from `findMany` results. All three require a bounded date range (max 366 days) to avoid an unbounded collection scan.
+`GET /api/reports/appointments?from&to`, `/popular-services?from&to`, `/inventory-turnover?from&to`, `/low-stock?limit` — admin-only, aggregated in the service layer from `findMany` results. The date-range reports require a bounded range (max 366 days) to avoid an unbounded collection scan; `/low-stock` lists active medications at or below `LOW_STOCK_THRESHOLD` (`report.constants.ts`), lowest stock first, with `limit` capped at 50.
 
 ## Phase 9 — Retire the legacy REST backend path
 

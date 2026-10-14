@@ -1,22 +1,27 @@
 import type { ReadRepository } from '@/app/api/_shared/repository/repository.contract';
+import type { FirestoreQueryOptions } from '@/app/api/_shared/repository/repository.types';
 import type { Appointment } from '@/app/api/appointments/appointment.schema';
+import type { Medication } from '@/app/api/medications/medication.schema';
 import type { Order } from '@/app/api/orders/order.schema';
 import { AppointmentStatus, OrderStatus } from '@/constants/enum';
+import { LOW_STOCK_THRESHOLD } from './report.constants';
 import type {
 	AppointmentsReportQuery,
 	InventoryTurnoverQuery,
+	LowStockQuery,
 	PopularServicesQuery,
 } from './report.schema';
 import type {
 	AppointmentsReport,
 	InventoryTurnoverEntry,
+	LowStockReport,
 	PopularServiceEntry,
 } from './report.types';
 
 const APPOINTMENT_STATUS_VALUES = Object.values(AppointmentStatus);
 
 /**
- * Read-only aggregation over the `appointments`/`orders` collections — no
+ * Read-only aggregation over the `appointments`/`orders`/`medications` collections — no
  * new collection is created for reporting. Firestore has limited
  * server-side aggregation, so counts are computed here from `findMany`
  * results rather than assuming a native group-by pipeline exists. Every
@@ -28,7 +33,8 @@ const APPOINTMENT_STATUS_VALUES = Object.values(AppointmentStatus);
 export class ReportService {
 	constructor(
 		private readonly appointmentRepo: ReadRepository<Appointment>,
-		private readonly orderRepo: ReadRepository<Order>
+		private readonly orderRepo: ReadRepository<Order>,
+		private readonly medicationRepo: ReadRepository<Medication>
 	) {}
 
 	async appointmentsReport(
@@ -45,14 +51,16 @@ export class ReportService {
 			APPOINTMENT_STATUS_VALUES.map((status) => [status, 0])
 		) as Record<AppointmentStatus, number>;
 		const byDay: Record<string, number> = {};
+		let total = 0;
 
 		for (const appointment of appointments) {
 			byStatus[appointment.status] += 1;
+			if (appointment.status !== AppointmentStatus.CANCELLED) total += 1;
 			const day = appointment.start.slice(0, 10);
 			byDay[day] = (byDay[day] ?? 0) + 1;
 		}
 
-		return { byStatus, byDay };
+		return { total, byStatus, byDay };
 	}
 
 	async popularServices(
@@ -104,5 +112,25 @@ export class ReportService {
 				quantityFulfilled,
 			}))
 			.sort((a, b) => b.quantityFulfilled - a.quantityFulfilled);
+	}
+
+	async lowStock(query: LowStockQuery): Promise<LowStockReport> {
+		const where: FirestoreQueryOptions<Medication>['where'] = [
+			{ field: 'active', op: '==', value: true },
+			{ field: 'stock', op: '<=', value: LOW_STOCK_THRESHOLD },
+		];
+		const [medications, count] = await Promise.all([
+			this.medicationRepo.findMany({
+				where,
+				orderBy: [{ field: 'stock', direction: 'asc' }],
+				limit: query.limit,
+			}),
+			this.medicationRepo.count({ where }),
+		]);
+
+		return {
+			count,
+			items: medications.map(({ id, name, stock }) => ({ id, name, stock })),
+		};
 	}
 }

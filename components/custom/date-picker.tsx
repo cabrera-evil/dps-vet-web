@@ -1,7 +1,7 @@
 'use client';
 
+import { DatePickerCalendar } from '@/components/custom/date-picker-calendar';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
 import {
 	Popover,
 	PopoverContent,
@@ -21,13 +21,6 @@ interface DatePickerProps {
 	placeholder?: string;
 }
 
-/**
- * Project fork of `components/ui/calendar` for form date fields — that
- * component is only the calendar grid, with no trigger/input of its own, so
- * this wraps it in a `Popover` + `Button` instead of falling back to the
- * native `<input type="date">`. Stores/emits plain `yyyy-MM-dd` strings so it
- * drops into the existing string-typed Zod schemas unchanged.
- */
 export function DatePicker({
 	id,
 	value,
@@ -37,10 +30,17 @@ export function DatePicker({
 	placeholder = 'Selecciona una fecha',
 }: DatePickerProps) {
 	const [open, setOpen] = useState(false);
+	const [calendarKey, setCalendarKey] = useState(0);
 	const selected = value ? parseISO(value) : undefined;
 
 	return (
-		<Popover open={open} onOpenChange={setOpen}>
+		<Popover
+			open={open}
+			onOpenChange={(nextOpen) => {
+				if (nextOpen) setCalendarKey((key) => key + 1);
+				setOpen(nextOpen);
+			}}
+		>
 			<PopoverTrigger
 				render={
 					<Button
@@ -59,11 +59,10 @@ export function DatePicker({
 					</Button>
 				}
 			/>
-			<PopoverContent className="w-auto p-0">
-				<Calendar
-					mode="single"
+			<PopoverContent className="w-auto gap-0 p-0">
+				<DatePickerCalendar
+					key={calendarKey}
 					selected={selected}
-					defaultMonth={selected}
 					onSelect={(date) => {
 						onChange(date ? format(date, 'yyyy-MM-dd') : '');
 						setOpen(false);

@@ -21,6 +21,10 @@ export const appointmentsReportQuerySchema = dateRangeQuerySchema;
 export const popularServicesQuerySchema = dateRangeQuerySchema;
 export const inventoryTurnoverQuerySchema = dateRangeQuerySchema;
 
+export const lowStockQuerySchema = z.object({
+	limit: z.coerce.number().int().positive().max(50).default(5),
+});
+
 export type AppointmentsReportQuery = z.infer<
 	typeof appointmentsReportQuerySchema
 >;
@@ -28,3 +32,4 @@ export type PopularServicesQuery = z.infer<typeof popularServicesQuerySchema>;
 export type InventoryTurnoverQuery = z.infer<
 	typeof inventoryTurnoverQuerySchema
 >;
+export type LowStockQuery = z.infer<typeof lowStockQuerySchema>;

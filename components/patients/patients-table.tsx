@@ -4,6 +4,7 @@ import { PetDeleteDialog } from '@/components/patients/pet-delete-dialog';
 import { PetFormDialog } from '@/components/patients/pet-form-dialog';
 import { TableSkeletonRows } from '@/components/table/table-skeleton-rows';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
@@ -14,21 +15,24 @@ import {
 	TableHeader,
 	TableRow,
 } from '@/components/ui/table';
+import { Permission } from '@/constants/permission';
 import { usePetDirectory } from '@/hooks/use-pet-directory';
 import { useGet } from '@/hooks/use-rest';
 import { Pet } from '@/types/pet.type';
-import { Search } from 'lucide-react';
+import { getAgeLabel } from '@/utils/age';
+import { hasPermission } from '@/utils/permission';
+import { FileText, Search } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
-
-function getAgeLabel(birthDate: string) {
-	const ageMs = Date.now() - new Date(birthDate).getTime();
-	const years = Math.floor(ageMs / (1000 * 60 * 60 * 24 * 365.25));
-	return years > 0 ? `${years} años` : 'Menor a 1 año';
-}
 
 export function PatientsTable() {
 	const [query, setQuery] = useState('');
 	const { canManageAll, getOwnerName } = usePetDirectory();
+	const { data: session } = useSession();
+	const canViewRecord = hasPermission(session?.user?.permissions, [
+		Permission.MEDICAL_RECORDS_MANAGE_ALL,
+	]);
 	const { data: pets, isLoading } = useGet<Pet[]>({
 		path: '/pets',
 		params: { pageSize: 100 },
@@ -88,13 +92,26 @@ export function PatientsTable() {
 											</div>
 										</TableCell>
 										<TableCell>{pet.species}</TableCell>
-										<TableCell>{pet.breed}</TableCell>
+										<TableCell>{pet.breed ?? '—'}</TableCell>
 										<TableCell>{getAgeLabel(pet.birthDate)}</TableCell>
 										{canManageAll && (
 											<TableCell>{getOwnerName(pet.ownerId)}</TableCell>
 										)}
 										<TableCell className="text-right">
 											<div className="flex justify-end gap-2">
+												{canViewRecord && (
+													<Button
+														size="icon"
+														variant="outline"
+														aria-label={`Ver expediente de ${pet.name}`}
+														nativeButton={false}
+														render={
+															<Link href={`/dashboard/patients/${pet.id}`} />
+														}
+													>
+														<FileText />
+													</Button>
+												)}
 												<PetFormDialog mode="edit" pet={pet} />
 												<PetDeleteDialog pet={pet} />
 											</div>

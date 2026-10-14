@@ -1,0 +1,71 @@
+import type { DraftTreatment } from '@/app/api/consultations/consultation.schema';
+import {
+	ConsultationKind,
+	ConsultationStatus,
+	DiagnosisSeverity,
+	DiagnosisStatus,
+	DiagnosisType,
+} from '@/constants/enum';
+
+export interface ConsultationDiagnosis {
+	id: string;
+	name: string;
+	type: DiagnosisType;
+	status: DiagnosisStatus;
+	severity?: DiagnosisSeverity;
+	notes?: string;
+	isActiveProblem: boolean;
+}
+
+export interface ConsultationMeasurements {
+	weightKg?: number;
+	temperatureC?: number;
+	heartRateBpm?: number;
+	respiratoryRateRpm?: number;
+	bodyConditionScore?: number;
+	hydration?: string;
+	mucousMembranes?: string;
+	mucousMembranesOther?: string;
+	capillaryRefill?: string;
+	pain?: string;
+}
+
+export interface FollowUp {
+	id: string;
+	recommendedDate: string;
+	reason: string;
+	sourceConsultationId: string;
+}
+
+export interface ConsultationListItem {
+	id: string;
+	kind?: ConsultationKind;
+	status: ConsultationStatus;
+	occurredAt: string;
+	staffName: string;
+	reason?: string;
+	mainDiagnosis?: string;
+	requiresFollowUp: boolean;
+}
+
+export interface ConsultationRecord extends ConsultationListItem {
+	petId: string;
+	staffId: string;
+	appointmentId?: string;
+	anamnesis?: string;
+	measurements: ConsultationMeasurements;
+	physicalExam?: string;
+	diagnoses: ConsultationDiagnosis[];
+	noDefinedDiagnosis: boolean;
+	instructions?: string;
+	internalNotes?: string;
+	prognosis?: string;
+	followUp?: Omit<FollowUp, 'id' | 'sourceConsultationId'>;
+	treatments: DraftTreatment[];
+	updatedAt: string;
+}
+
+export interface ConsultationOption {
+	id: string;
+	label: string;
+}

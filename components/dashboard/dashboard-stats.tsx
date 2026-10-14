@@ -1,33 +1,47 @@
-import { dashboardStats } from '@/components/dashboard/mocks/dashboard.mock';
+'use client';
+
 import {
-	Card,
-	CardAction,
-	CardContent,
-	CardHeader,
-	CardTitle,
-} from '@/components/ui/card';
+	DashboardStatCard,
+	type DashboardStat,
+} from '@/components/dashboard/dashboard-stat-card';
+import { dashboardStats } from '@/components/dashboard/mocks/dashboard.mock';
+import { useAppointmentsToday } from '@/hooks/use-appointments-today';
+import { useLowStock } from '@/hooks/use-low-stock';
+import { CalendarClock, TriangleAlert } from 'lucide-react';
+
+const EMPTY_VALUE = '—';
 
 export function DashboardStats() {
+	const { total, pending, isLoading, isError } = useAppointmentsToday();
+	const lowStock = useLowStock();
+
+	const appointmentsToday: DashboardStat = {
+		label: 'Citas hoy',
+		value: total?.toString() ?? EMPTY_VALUE,
+		description: isError
+			? 'No se pudo cargar'
+			: `${pending ?? 0} pendientes de confirmar`,
+		icon: CalendarClock,
+		isLoading,
+	};
+
+	const lowStockMedications: DashboardStat = {
+		label: 'Medicamentos con bajo stock',
+		value: lowStock.count?.toString() ?? EMPTY_VALUE,
+		description: lowStock.isError
+			? 'No se pudo cargar'
+			: 'Requieren reabastecimiento',
+		icon: TriangleAlert,
+		isLoading: lowStock.isLoading,
+	};
+
 	return (
 		<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-			{dashboardStats.map((stat) => (
-				<Card key={stat.label}>
-					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium text-muted-foreground">
-							{stat.label}
-						</CardTitle>
-						<CardAction>
-							<div className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-								<stat.icon className="size-4" />
-							</div>
-						</CardAction>
-					</CardHeader>
-					<CardContent>
-						<p className="text-2xl font-semibold tabular-nums">{stat.value}</p>
-						<p className="text-xs text-muted-foreground">{stat.description}</p>
-					</CardContent>
-				</Card>
-			))}
+			{[appointmentsToday, lowStockMedications, ...dashboardStats].map(
+				(stat) => (
+					<DashboardStatCard key={stat.label} {...stat} />
+				)
+			)}
 		</div>
 	);
 }
