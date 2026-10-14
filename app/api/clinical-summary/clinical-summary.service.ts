@@ -1,4 +1,4 @@
-import { assertClinicalStaff } from '@/app/api/_shared/http/authorization';
+import { assertCanReadPetRecord } from '@/app/api/_shared/http/authorization';
 import type { Identity } from '@/app/api/_shared/http/http.types';
 import type { FirestoreReadRepository } from '@/app/api/_shared/repository/repository.contract';
 import type { ClinicalMeasurement } from '@/app/api/consultations/clinical-measurement.schema';
@@ -23,7 +23,6 @@ import {
 	formatDuration,
 	formatFrequency,
 } from '@/utils/treatment-format';
-import createHttpError from 'http-errors';
 import {
 	RECENT_DIAGNOSES_LIMIT,
 	SUMMARY_ALERTS_LIMIT,
@@ -51,9 +50,8 @@ export class ClinicalSummaryService {
 	) {}
 
 	async get(identity: Identity, petId: string): Promise<ClinicalSummary> {
-		assertClinicalStaff(identity);
 		const pet = await this.petRepo.findById(petId);
-		if (!pet) throw new createHttpError.NotFound('Pet not found');
+		assertCanReadPetRecord(identity, pet);
 
 		const [
 			owner,

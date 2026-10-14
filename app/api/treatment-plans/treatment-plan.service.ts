@@ -1,4 +1,7 @@
-import { assertClinicalStaff } from '@/app/api/_shared/http/authorization';
+import {
+	assertCanReadPetRecord,
+	isClinicalStaff,
+} from '@/app/api/_shared/http/authorization';
 import type { Identity } from '@/app/api/_shared/http/http.types';
 import type { FirestoreReadRepository } from '@/app/api/_shared/repository/repository.contract';
 import type { WithId } from '@/app/api/_shared/repository/repository.types';
@@ -27,10 +30,29 @@ const toFollowUp = ({
 	status,
 });
 
+/** Owners never receive staff notes, application notes or adverse reactions. */
+const toOwnerView = (plan: TreatmentPlanDetail): TreatmentPlanDetail => ({
+	...plan,
+	internalNotes: undefined,
+	controls: plan.controls?.map((control) => ({
+		...control,
+		clinicalNotes: undefined,
+	})),
+	orders: plan.orders.map((order) => ({
+		...order,
+		applications: order.applications.map((application) => ({
+			...application,
+			notes: undefined,
+			adverseReaction: undefined,
+		})),
+	})),
+});
+
 /**
  * Read side of treatment plans: assembles each stored plan with its
  * applications, follow-up and controls into the shape the UI consumes.
- * Staff only; depends on repository abstractions (DIP).
+ * Staff read any plan, owners only their pets' (without staff-only notes);
+ * depends on repository abstractions (DIP).
  */
 export class TreatmentPlanService {
 	constructor(
@@ -84,17 +106,19 @@ export class TreatmentPlanService {
 		identity: Identity,
 		petId: string
 	): Promise<TreatmentPlanDetail[]> {
-		assertClinicalStaff(identity);
-		if (!(await this.petRepo.exists(petId)))
-			throw new createHttpError.NotFound('Pet not found');
-		return this.assemblePlans(petId, await this.planRepo.findByPet(petId));
+		assertCanReadPetRecord(identity, await this.petRepo.findById(petId));
+		const plans = await this.assemblePlans(
+			petId,
+			await this.planRepo.findByPet(petId)
+		);
+		return isClinicalStaff(identity) ? plans : plans.map(toOwnerView);
 	}
 
 	async getById(identity: Identity, id: string): Promise<TreatmentPlanDetail> {
-		assertClinicalStaff(identity);
 		const plan = await this.planRepo.findById(id);
 		if (!plan) throw new createHttpError.NotFound('Treatment plan not found');
+		assertCanReadPetRecord(identity, await this.petRepo.findById(plan.petId));
 		const [detail] = await this.assemblePlans(plan.petId, [plan]);
-		return detail;
+		return isClinicalStaff(identity) ? detail : toOwnerView(detail);
 	}
 }

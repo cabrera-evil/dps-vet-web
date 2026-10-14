@@ -46,6 +46,8 @@ interface TreatmentDetailProps {
 	patient: ConsultationPatientContext;
 	plan: TreatmentPlan;
 	canWrite: boolean;
+	/** Prescription and the owner preview are staff tools. */
+	isStaff: boolean;
 }
 
 export function TreatmentDetail({
@@ -53,6 +55,7 @@ export function TreatmentDetail({
 	patient,
 	plan,
 	canWrite,
+	isStaff,
 }: TreatmentDetailProps) {
 	const expedienteHref = `/dashboard/patients/${patientId}?tab=tratamientos`;
 	const isOpen =
@@ -112,18 +115,20 @@ export function TreatmentDetail({
 						</p>
 					)}
 					<div className="flex flex-wrap gap-2">
-						<Button
-							variant="outline"
-							nativeButton={false}
-							render={
-								<Link
-									href={`/dashboard/patients/${patientId}/treatments/${plan.id}/prescription`}
-								/>
-							}
-						>
-							<FileText />
-							Ver receta
-						</Button>
+						{isStaff && (
+							<Button
+								variant="outline"
+								nativeButton={false}
+								render={
+									<Link
+										href={`/dashboard/patients/${patientId}/treatments/${plan.id}/prescription`}
+									/>
+								}
+							>
+								<FileText />
+								Ver receta
+							</Button>
+						)}
 						{canWrite && isOpen && (
 							<>
 								<CloseTreatmentDialog
@@ -322,7 +327,7 @@ export function TreatmentDetail({
 					</section>
 				)}
 
-				<OwnerCarePreview plan={toOwnerCarePlan(plan)} />
+				{isStaff && <OwnerCarePreview plan={toOwnerCarePlan(plan)} />}
 
 				<div>
 					<Button

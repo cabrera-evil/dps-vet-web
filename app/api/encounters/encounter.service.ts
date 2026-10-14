@@ -1,9 +1,12 @@
-import { assertClinicalStaff } from '@/app/api/_shared/http/authorization';
+import {
+	assertCanReadPetRecord,
+	isClinicalStaff,
+} from '@/app/api/_shared/http/authorization';
 import type { Identity } from '@/app/api/_shared/http/http.types';
 import type { FirestoreReadRepository } from '@/app/api/_shared/repository/repository.contract';
 import type { FirestoreQueryOptions } from '@/app/api/_shared/repository/repository.types';
 import type { Pet } from '@/app/api/pets/pet.schema';
-import createHttpError from 'http-errors';
+import { ConsultationStatus } from '@/constants/enum';
 import type {
 	ClinicalEncounter,
 	ListEncountersQuery,
@@ -26,11 +29,13 @@ export class EncounterService {
 		petId: string,
 		query: ListEncountersQuery
 	): Promise<EncounterListResult> {
-		assertClinicalStaff(identity);
-		if (!(await this.petRepo.exists(petId)))
-			throw new createHttpError.NotFound('Pet not found');
+		assertCanReadPetRecord(identity, await this.petRepo.findById(petId));
 
-		const { page, pageSize, status } = query;
+		const { page, pageSize } = query;
+		// Owners only see finalized attentions, never drafts.
+		const status = isClinicalStaff(identity)
+			? query.status
+			: ConsultationStatus.FINALIZED;
 		const clauses: NonNullable<
 			FirestoreQueryOptions<ClinicalEncounter>['where']
 		> = [{ field: 'petId', op: '==', value: petId }];

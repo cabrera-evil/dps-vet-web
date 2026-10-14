@@ -4,7 +4,11 @@ import type { ConsultationPatientContext } from '@/components/consultations/cons
 import { PatientRecordNotice } from '@/components/patients/patient-record-notice';
 import { PatientRecordSkeleton } from '@/components/patients/patient-record-skeleton';
 import { Button } from '@/components/ui/button';
-import { Permission } from '@/constants/permission';
+import {
+	CLINICAL_READ_PERMISSIONS,
+	CLINICAL_WRITE_PERMISSIONS,
+	Permission,
+} from '@/constants/permission';
 import { usePatientClinicalSummary } from '@/hooks/use-patient-record';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useTreatmentPlan } from '@/hooks/use-treatments';
@@ -24,8 +28,9 @@ export function TreatmentWorkspace({
 	treatmentId,
 }: TreatmentWorkspaceProps) {
 	const { status, hasPermission } = usePermissions();
-	const canRead = hasPermission([Permission.MEDICAL_RECORDS_MANAGE_ALL]);
-	const canWrite = canRead && hasPermission([Permission.MEDICAL_RECORDS_WRITE]);
+	const canRead = hasPermission(CLINICAL_READ_PERMISSIONS);
+	const canWrite = hasPermission(CLINICAL_WRITE_PERMISSIONS, 'all');
+	const isStaff = hasPermission([Permission.MEDICAL_RECORDS_MANAGE_ALL]);
 	const summaryQuery = usePatientClinicalSummary(patientId, canRead);
 	const planQuery = useTreatmentPlan(patientId, treatmentId, canRead);
 
@@ -110,6 +115,7 @@ export function TreatmentWorkspace({
 			patient={patient}
 			plan={plan}
 			canWrite={canWrite}
+			isStaff={isStaff}
 		/>
 	);
 }

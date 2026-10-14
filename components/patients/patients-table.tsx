@@ -15,7 +15,7 @@ import {
 	TableHeader,
 	TableRow,
 } from '@/components/ui/table';
-import { Permission } from '@/constants/permission';
+import { CLINICAL_READ_PERMISSIONS, Permission } from '@/constants/permission';
 import { usePermissions } from '@/hooks/use-permissions';
 import { usePetDirectory } from '@/hooks/use-pet-directory';
 import { useGet } from '@/hooks/use-rest';
@@ -29,7 +29,7 @@ export function PatientsTable() {
 	const [query, setQuery] = useState('');
 	const { canManageAll, getOwnerName } = usePetDirectory();
 	const { hasPermission } = usePermissions();
-	const canViewRecord = hasPermission([Permission.MEDICAL_RECORDS_MANAGE_ALL]);
+	const canViewRecord = hasPermission(CLINICAL_READ_PERMISSIONS);
 	const canViewPet = hasPermission([Permission.PETS_READ]);
 	const { data: pets, isLoading } = useGet<Pet[]>({
 		path: '/pets',

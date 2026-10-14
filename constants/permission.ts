@@ -20,3 +20,15 @@ export enum Permission {
 	ORDERS_MANAGE_ALL = 'orders:manage-all',
 	REPORTS_READ = 'reports:read',
 }
+
+/** Read access to clinical records; the API narrows non-staff readers to their own pets. */
+export const CLINICAL_READ_PERMISSIONS = [
+	Permission.MEDICAL_RECORDS_READ,
+	Permission.MEDICAL_RECORDS_MANAGE_ALL,
+];
+
+/** Staff clinical writes need both permissions; owners never hold the staff one. */
+export const CLINICAL_WRITE_PERMISSIONS = [
+	Permission.MEDICAL_RECORDS_WRITE,
+	Permission.MEDICAL_RECORDS_MANAGE_ALL,
+];

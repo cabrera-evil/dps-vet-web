@@ -1,4 +1,7 @@
-import { assertClinicalStaff } from '@/app/api/_shared/http/authorization';
+import {
+	assertCanReadPetRecord,
+	assertClinicalStaff,
+} from '@/app/api/_shared/http/authorization';
 import type { Identity } from '@/app/api/_shared/http/http.types';
 import type {
 	FirestoreCrudRepository,
@@ -46,8 +49,7 @@ export class MedicalHistoryService {
 		petId: string,
 		query: ListMedicalHistoriesQuery
 	): Promise<MedicalHistoryListResult> {
-		assertClinicalStaff(identity);
-		await this.assertPetExists(petId);
+		assertCanReadPetRecord(identity, await this.petRepo.findById(petId));
 
 		const { page, pageSize } = query;
 		const where = [

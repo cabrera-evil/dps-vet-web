@@ -8,6 +8,6 @@ export const GET = withRoute(
 			const { id } = await context.params;
 			return treatmentPlanController.get(context.identity!, id);
 		},
-		[Permission.MEDICAL_RECORDS_MANAGE_ALL]
+		[Permission.MEDICAL_RECORDS_READ, Permission.MEDICAL_RECORDS_MANAGE_ALL]
 	)
 );

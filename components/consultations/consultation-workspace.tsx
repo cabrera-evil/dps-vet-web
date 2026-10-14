@@ -4,7 +4,10 @@ import { PatientRecordNotice } from '@/components/patients/patient-record-notice
 import { PatientRecordSkeleton } from '@/components/patients/patient-record-skeleton';
 import { Button } from '@/components/ui/button';
 import { ConsultationStatus } from '@/constants/enum';
-import { Permission } from '@/constants/permission';
+import {
+	CLINICAL_READ_PERMISSIONS,
+	CLINICAL_WRITE_PERMISSIONS,
+} from '@/constants/permission';
 import { usePatientClinicalSummary } from '@/hooks/use-patient-record';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useGet } from '@/hooks/use-rest';
@@ -27,8 +30,8 @@ export function ConsultationWorkspace({
 	consultationId,
 }: ConsultationWorkspaceProps) {
 	const { status, hasPermission } = usePermissions();
-	const canRead = hasPermission([Permission.MEDICAL_RECORDS_MANAGE_ALL]);
-	const canWrite = canRead && hasPermission([Permission.MEDICAL_RECORDS_WRITE]);
+	const canRead = hasPermission(CLINICAL_READ_PERMISSIONS);
+	const canWrite = hasPermission(CLINICAL_WRITE_PERMISSIONS, 'all');
 	const summaryQuery = usePatientClinicalSummary(patientId, canRead);
 	const consultationQuery = useGet<ConsultationRecord>(
 		{ path: `/consultations/${consultationId}` },

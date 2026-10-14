@@ -5,6 +5,10 @@ import { Firestore, getFirestore } from 'firebase-admin/firestore';
 import { getStorage, Storage } from 'firebase-admin/storage';
 import { getFirebaseAdminConfig } from './config';
 
+const globalForFirebase = globalThis as {
+	firebaseAdminService?: FirebaseAdminService;
+};
+
 /**
  * Server-only singleton around the Firebase Admin SDK. Initializes the Admin app
  * exactly once per process (guarding against dev/HMR double-init) and exposes
@@ -14,8 +18,6 @@ import { getFirebaseAdminConfig } from './config';
  * Actions — never from `proxy.ts` (middleware/edge) or client code.
  */
 export class FirebaseAdminService {
-	private static instance: FirebaseAdminService;
-
 	private readonly app: App;
 	private firestore?: Firestore;
 	private auth?: Auth;
@@ -35,9 +37,10 @@ export class FirebaseAdminService {
 				});
 	}
 
+	// Kept on globalThis so HMR re-evaluating this module never re-runs `settings()`.
 	public static getInstance() {
-		FirebaseAdminService.instance ??= new FirebaseAdminService();
-		return FirebaseAdminService.instance;
+		globalForFirebase.firebaseAdminService ??= new FirebaseAdminService();
+		return globalForFirebase.firebaseAdminService;
 	}
 
 	public getFirestore(): Firestore {

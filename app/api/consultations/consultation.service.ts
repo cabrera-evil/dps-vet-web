@@ -1,4 +1,8 @@
-import { assertClinicalStaff } from '@/app/api/_shared/http/authorization';
+import {
+	assertCanReadPetRecord,
+	assertClinicalStaff,
+	isClinicalStaff,
+} from '@/app/api/_shared/http/authorization';
 import type { Identity } from '@/app/api/_shared/http/http.types';
 import type { FirestoreReadRepository } from '@/app/api/_shared/repository/repository.contract';
 import type { RoleDocument } from '@/app/api/_shared/repository/role.types';
@@ -219,8 +223,18 @@ export class ConsultationService {
 	}
 
 	async getById(identity: Identity, id: string): Promise<ConsultationDetail> {
-		assertClinicalStaff(identity);
-		return this.toDetail(id, await this.getSnapshot(id));
+		const snapshot = await this.getSnapshot(id);
+		const { encounter } = snapshot;
+		assertCanReadPetRecord(
+			identity,
+			await this.petRepo.findById(encounter.petId)
+		);
+		if (isClinicalStaff(identity)) return this.toDetail(id, snapshot);
+
+		// Owners only see finalized consultations, without staff-only notes.
+		if (encounter.status !== ConsultationStatus.FINALIZED)
+			throw new createHttpError.NotFound('Consultation not found');
+		return { ...this.toDetail(id, snapshot), internalNotes: undefined };
 	}
 
 	async update(

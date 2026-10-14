@@ -7,7 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RECORD_TABS } from '@/constants/clinical';
 import { ConsultationStatus } from '@/constants/enum';
-import { Permission } from '@/constants/permission';
+import {
+	CLINICAL_READ_PERMISSIONS,
+	CLINICAL_WRITE_PERMISSIONS,
+	Permission,
+} from '@/constants/permission';
 import { usePatientRecord } from '@/hooks/use-patient-record';
 import { usePermissions } from '@/hooks/use-permissions';
 import { isNotFoundError } from '@/utils/http-error';
@@ -30,8 +34,8 @@ export function PatientRecord({ patientId }: { patientId: string }) {
 	);
 	const [editOpen, setEditOpen] = useState(false);
 
-	const canRead = hasPermission([Permission.MEDICAL_RECORDS_MANAGE_ALL]);
-	const canWrite = canRead && hasPermission([Permission.MEDICAL_RECORDS_WRITE]);
+	const canRead = hasPermission(CLINICAL_READ_PERMISSIONS);
+	const canWrite = hasPermission(CLINICAL_WRITE_PERMISSIONS, 'all');
 	const record = usePatientRecord(patientId, canRead);
 
 	if (status === 'loading') return <PatientRecordSkeleton />;
