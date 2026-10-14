@@ -1,7 +1,7 @@
 'use client';
 
 import { Permission } from '@/constants/permission';
-import { hasPermission } from '@/utils/permission';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useSession } from 'next-auth/react';
 import { ReactNode } from 'react';
 
@@ -36,11 +36,15 @@ export function PermissionWrapper({
 	fallback,
 	loading,
 }: PermissionAuthWrapperProps) {
-	const { data: session, status } = useSession();
-	if (status === 'loading') return loading;
+	const { status } = useSession();
+	const { status: permissionsStatus, hasPermission } = usePermissions();
+	if (
+		status === 'loading' ||
+		(status === 'authenticated' && permissionsStatus === 'loading')
+	)
+		return loading;
 	if (status !== 'authenticated') return fallback;
-	if (!hasPermission(session?.user?.permissions, permissions, mode))
-		return fallback;
+	if (!hasPermission(permissions, mode)) return fallback;
 	return children;
 }
 
@@ -52,12 +56,16 @@ export function AuthPermissionWrapper({
 	fallback,
 	loading,
 }: PermissionAuthWrapperProps) {
-	const { data: session, status } = useSession();
-	if (status === 'loading') return loading;
+	const { status } = useSession();
+	const { status: permissionsStatus, hasPermission } = usePermissions();
+	if (
+		status === 'loading' ||
+		(status === 'authenticated' && permissionsStatus === 'loading')
+	)
+		return loading;
 	// Check authentication first
 	if (status !== 'authenticated') return fallback;
 	// Then check authorization
-	if (!hasPermission(session?.user?.permissions, permissions, mode))
-		return fallback;
+	if (!hasPermission(permissions, mode)) return fallback;
 	return children;
 }

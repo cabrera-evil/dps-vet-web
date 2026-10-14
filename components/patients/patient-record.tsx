@@ -9,12 +9,12 @@ import { RECORD_TABS } from '@/constants/clinical';
 import { ConsultationStatus } from '@/constants/enum';
 import { Permission } from '@/constants/permission';
 import { usePatientRecord } from '@/hooks/use-patient-record';
+import { usePermissions } from '@/hooks/use-permissions';
 import { isNotFoundError } from '@/utils/http-error';
-import { hasPermission } from '@/utils/permission';
 import { CircleAlert, FileQuestion, ShieldAlert } from 'lucide-react';
-import { useSession } from 'next-auth/react';
 import { parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useState } from 'react';
+import { ClientPetView } from './client-pet-view';
 import { PatientEditSheet } from './patient-edit-sheet';
 import { PatientGeneralDataTab } from './patient-general-data-tab';
 import { PatientRecordHeader } from './patient-record-header';
@@ -23,25 +23,23 @@ import { PatientRecordSkeleton } from './patient-record-skeleton';
 import { PatientSummaryTab } from './patient-summary-tab';
 
 export function PatientRecord({ patientId }: { patientId: string }) {
-	const { data: session, status } = useSession();
+	const { status, hasPermission } = usePermissions();
 	const [tab, setTab] = useQueryState(
 		'tab',
 		parseAsStringLiteral(RECORD_TABS).withDefault('resumen')
 	);
 	const [editOpen, setEditOpen] = useState(false);
 
-	const permissions = session?.user?.permissions;
-	const canRead = hasPermission(permissions, [
-		Permission.MEDICAL_RECORDS_MANAGE_ALL,
-	]);
-	const canWrite =
-		canRead && hasPermission(permissions, [Permission.MEDICAL_RECORDS_WRITE]);
+	const canRead = hasPermission([Permission.MEDICAL_RECORDS_MANAGE_ALL]);
+	const canWrite = canRead && hasPermission([Permission.MEDICAL_RECORDS_WRITE]);
 	const record = usePatientRecord(patientId, canRead);
 
 	if (status === 'loading') return <PatientRecordSkeleton />;
 
 	if (!canRead)
-		return (
+		return hasPermission([Permission.PETS_READ]) ? (
+			<ClientPetView patientId={patientId} />
+		) : (
 			<PatientRecordNotice
 				icon={ShieldAlert}
 				title="No tienes permisos para ver este expediente"

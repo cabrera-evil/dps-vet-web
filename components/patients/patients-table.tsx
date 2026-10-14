@@ -16,23 +16,21 @@ import {
 	TableRow,
 } from '@/components/ui/table';
 import { Permission } from '@/constants/permission';
+import { usePermissions } from '@/hooks/use-permissions';
 import { usePetDirectory } from '@/hooks/use-pet-directory';
 import { useGet } from '@/hooks/use-rest';
 import { Pet } from '@/types/pet.type';
 import { getAgeLabel } from '@/utils/age';
-import { hasPermission } from '@/utils/permission';
 import { FileText, Search } from 'lucide-react';
-import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
 export function PatientsTable() {
 	const [query, setQuery] = useState('');
 	const { canManageAll, getOwnerName } = usePetDirectory();
-	const { data: session } = useSession();
-	const canViewRecord = hasPermission(session?.user?.permissions, [
-		Permission.MEDICAL_RECORDS_MANAGE_ALL,
-	]);
+	const { hasPermission } = usePermissions();
+	const canViewRecord = hasPermission([Permission.MEDICAL_RECORDS_MANAGE_ALL]);
+	const canViewPet = hasPermission([Permission.PETS_READ]);
 	const { data: pets, isLoading } = useGet<Pet[]>({
 		path: '/pets',
 		params: { pageSize: 100 },
@@ -99,11 +97,11 @@ export function PatientsTable() {
 										)}
 										<TableCell className="text-right">
 											<div className="flex justify-end gap-2">
-												{canViewRecord && (
+												{canViewPet && (
 													<Button
 														size="icon"
 														variant="outline"
-														aria-label={`Ver expediente de ${pet.name}`}
+														aria-label={`${canViewRecord ? 'Ver expediente de' : 'Ver datos de'} ${pet.name}`}
 														nativeButton={false}
 														render={
 															<Link href={`/dashboard/patients/${pet.id}`} />

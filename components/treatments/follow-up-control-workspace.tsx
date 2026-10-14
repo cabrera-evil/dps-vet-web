@@ -18,16 +18,15 @@ import { Button } from '@/components/ui/button';
 import { FollowUpStatus } from '@/constants/enum';
 import { Permission } from '@/constants/permission';
 import { usePatientClinicalSummary } from '@/hooks/use-patient-record';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useFollowUpControl } from '@/hooks/use-treatments';
 import { isNotFoundError } from '@/utils/http-error';
-import { hasPermission } from '@/utils/permission';
 import {
 	CircleAlert,
 	CircleCheck,
 	FileQuestion,
 	ShieldAlert,
 } from 'lucide-react';
-import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { FollowUpContextCard } from './follow-up-context-card';
 import { FollowUpControlForm } from './follow-up-control-form';
@@ -42,13 +41,9 @@ export function FollowUpControlWorkspace({
 	patientId,
 	followUpId,
 }: FollowUpControlWorkspaceProps) {
-	const { data: session, status } = useSession();
-	const permissions = session?.user?.permissions;
-	const canRead = hasPermission(permissions, [
-		Permission.MEDICAL_RECORDS_MANAGE_ALL,
-	]);
-	const canWrite =
-		canRead && hasPermission(permissions, [Permission.MEDICAL_RECORDS_WRITE]);
+	const { status, hasPermission } = usePermissions();
+	const canRead = hasPermission([Permission.MEDICAL_RECORDS_MANAGE_ALL]);
+	const canWrite = canRead && hasPermission([Permission.MEDICAL_RECORDS_WRITE]);
 	const summaryQuery = usePatientClinicalSummary(patientId, canRead);
 	const followUpQuery = useFollowUpControl(followUpId, canRead);
 

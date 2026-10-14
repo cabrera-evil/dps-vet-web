@@ -1,6 +1,11 @@
 'use client';
 
-import { dashboardNavItems } from '@/components/layout/dashboard-nav-items';
+import {
+	dashboardNavItems,
+	getNavTitle,
+} from '@/components/layout/dashboard-nav-items';
+import { DashboardNavUser } from '@/components/layout/dashboard-nav-user';
+import { isNavActive } from '@/components/layout/nav-active';
 import {
 	Sidebar,
 	SidebarContent,
@@ -12,30 +17,44 @@ import {
 	SidebarMenu,
 	SidebarMenuButton,
 	SidebarMenuItem,
+	SidebarRail,
 } from '@/components/ui/sidebar';
-import { hasPermission } from '@/utils/permission';
-import { LogOut, Stethoscope } from 'lucide-react';
-import { signOut, useSession } from 'next-auth/react';
+import { usePermissions } from '@/hooks/use-permissions';
+import { Stethoscope } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 export function DashboardSidebar() {
 	const pathname = usePathname();
-	const { data: session } = useSession();
+	const { hasPermission } = usePermissions();
 
+	// Default deny: permissions are empty until ready, so only unrestricted items show.
 	const visibleNavItems = dashboardNavItems.filter((item) =>
-		hasPermission(session?.user?.permissions, item.permissions ?? [], item.mode)
+		hasPermission(item.permissions ?? [], item.mode)
 	);
 
 	return (
-		<Sidebar>
+		<Sidebar variant="inset" collapsible="icon">
 			<SidebarHeader>
-				<div className="flex items-center gap-2 px-2 py-1.5">
-					<Stethoscope className="size-5 text-primary" />
-					<span className="font-heading text-sm font-semibold">
-						Veterinaria San Roque
-					</span>
-				</div>
+				<SidebarMenu>
+					<SidebarMenuItem>
+						<SidebarMenuButton
+							size="lg"
+							tooltip="Veterinaria San Roque"
+							render={<Link href="/dashboard" />}
+						>
+							<div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+								<Stethoscope aria-hidden className="size-4" />
+							</div>
+							<div className="grid flex-1 text-left text-sm leading-tight">
+								<span className="truncate font-semibold">
+									Veterinaria San Roque
+								</span>
+								<span className="truncate text-xs">Panel clínico</span>
+							</div>
+						</SidebarMenuButton>
+					</SidebarMenuItem>
+				</SidebarMenu>
 			</SidebarHeader>
 			<SidebarContent>
 				<SidebarGroup>
@@ -43,18 +62,16 @@ export function DashboardSidebar() {
 					<SidebarGroupContent>
 						<SidebarMenu>
 							{visibleNavItems.map((item) => {
-								const isActive =
-									item.href === '/dashboard'
-										? pathname === item.href
-										: pathname.startsWith(item.href);
+								const title = getNavTitle(item, hasPermission);
 								return (
 									<SidebarMenuItem key={item.href}>
 										<SidebarMenuButton
-											isActive={isActive}
+											tooltip={title}
+											isActive={isNavActive(pathname, item.href)}
 											render={<Link href={item.href} />}
 										>
-											<item.icon />
-											<span>{item.title}</span>
+											<item.icon aria-hidden />
+											<span>{title}</span>
 										</SidebarMenuButton>
 									</SidebarMenuItem>
 								);
@@ -64,20 +81,9 @@ export function DashboardSidebar() {
 				</SidebarGroup>
 			</SidebarContent>
 			<SidebarFooter>
-				<SidebarMenu>
-					<SidebarMenuItem>
-						<div className="truncate px-2 py-1 text-xs text-muted-foreground">
-							{session?.user?.email ?? 'Sesión activa'}
-						</div>
-					</SidebarMenuItem>
-					<SidebarMenuItem>
-						<SidebarMenuButton onClick={() => signOut()}>
-							<LogOut />
-							<span>Cerrar sesión</span>
-						</SidebarMenuButton>
-					</SidebarMenuItem>
-				</SidebarMenu>
+				<DashboardNavUser />
 			</SidebarFooter>
+			<SidebarRail />
 		</Sidebar>
 	);
 }

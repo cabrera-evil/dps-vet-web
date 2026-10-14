@@ -16,13 +16,12 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { queryClient } from '@/constants/environment';
 import { Permission } from '@/constants/permission';
+import { usePermissions } from '@/hooks/use-permissions';
 import { usePatch, usePost } from '@/hooks/use-rest';
 import { ServiceFormValues, serviceFormSchema } from '@/schemas/service.schema';
 import { Service } from '@/types/service.type';
-import { hasPermission } from '@/utils/permission';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Pencil, Plus } from 'lucide-react';
-import { useSession } from 'next-auth/react';
 import { ReactElement, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -39,7 +38,7 @@ type ServiceFormDialogProps =
  * pet/appointment writes which every client holds for their own records. */
 export function ServiceFormDialog(props: ServiceFormDialogProps) {
 	const { mode, trigger } = props;
-	const { data: session } = useSession();
+	const { hasPermission } = usePermissions();
 	const [open, setOpen] = useState(false);
 	const { mutateAsync: createService, isPending: isCreating } = usePost();
 	const { mutateAsync: updateService, isPending: isUpdating } = usePatch();
@@ -53,9 +52,7 @@ export function ServiceFormDialog(props: ServiceFormDialogProps) {
 		resolver: zodResolver(serviceFormSchema),
 	});
 
-	const canWrite = hasPermission(session?.user?.permissions, [
-		Permission.SERVICES_WRITE,
-	]);
+	const canWrite = hasPermission([Permission.SERVICES_WRITE]);
 	if (!canWrite) return null;
 
 	function handleOpenChange(nextOpen: boolean) {

@@ -1,17 +1,21 @@
 'use client';
 
-import { dashboardNavItems } from '@/components/layout/dashboard-nav-items';
+import {
+	dashboardNavItems,
+	getNavTitle,
+} from '@/components/layout/dashboard-nav-items';
+import { isNavActive } from '@/components/layout/nav-active';
 import { ThemeToggle } from '@/components/layout/theme-toggle';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { usePermissions } from '@/hooks/use-permissions';
 import { usePathname } from 'next/navigation';
 
 export function DashboardTopbar() {
 	const pathname = usePathname();
+	const { hasPermission } = usePermissions();
 	const current = dashboardNavItems.find((item) =>
-		item.href === '/dashboard'
-			? pathname === item.href
-			: pathname.startsWith(item.href)
+		isNavActive(pathname, item.href)
 	);
 
 	return (
@@ -19,7 +23,7 @@ export function DashboardTopbar() {
 			<SidebarTrigger />
 			<Separator orientation="vertical" className="mr-2 h-4" />
 			<h1 className="font-heading text-sm font-semibold">
-				{current?.title ?? 'Dashboard'}
+				{current ? getNavTitle(current, hasPermission) : 'Dashboard'}
 			</h1>
 			<ThemeToggle className="ml-auto" />
 		</header>

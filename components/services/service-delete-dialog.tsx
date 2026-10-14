@@ -14,11 +14,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { queryClient } from '@/constants/environment';
 import { Permission } from '@/constants/permission';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useDelete } from '@/hooks/use-rest';
 import { Service } from '@/types/service.type';
-import { hasPermission } from '@/utils/permission';
 import { Trash2 } from 'lucide-react';
-import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 
 function invalidateServices() {
@@ -28,12 +27,10 @@ function invalidateServices() {
 /** Gated on `SERVICES_WRITE` — the API also enforces this; hiding the trigger
  * is a UX nicety, not the authorization boundary. */
 export function ServiceDeleteDialog({ service }: { service: Service }) {
-	const { data: session } = useSession();
+	const { hasPermission } = usePermissions();
 	const { mutateAsync: deleteService, isPending } = useDelete();
 
-	const canWrite = hasPermission(session?.user?.permissions, [
-		Permission.SERVICES_WRITE,
-	]);
+	const canWrite = hasPermission([Permission.SERVICES_WRITE]);
 	if (!canWrite) return null;
 
 	async function handleConfirm() {

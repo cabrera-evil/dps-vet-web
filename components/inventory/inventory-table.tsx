@@ -13,16 +13,13 @@ import {
 	TableRow,
 } from '@/components/ui/table';
 import { Permission } from '@/constants/permission';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useGet } from '@/hooks/use-rest';
 import { Medication } from '@/types/medication.type';
-import { hasPermission } from '@/utils/permission';
-import { useSession } from 'next-auth/react';
 
 export function InventoryTable() {
-	const { data: session } = useSession();
-	const canWrite = hasPermission(session?.user?.permissions, [
-		Permission.MEDICATIONS_WRITE,
-	]);
+	const { hasPermission } = usePermissions();
+	const canWrite = hasPermission([Permission.MEDICATIONS_WRITE]);
 	const columnCount = canWrite ? 6 : 5;
 	const { data: medications, isLoading } = useGet<Medication[]>({
 		path: '/medications',

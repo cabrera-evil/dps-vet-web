@@ -5,10 +5,10 @@ import { PatientRecordSkeleton } from '@/components/patients/patient-record-skel
 import { Button } from '@/components/ui/button';
 import { Permission } from '@/constants/permission';
 import { usePatientClinicalSummary } from '@/hooks/use-patient-record';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useTreatmentPlan } from '@/hooks/use-treatments';
 import { getAgeLabel } from '@/utils/age';
 import { isNotFoundError } from '@/utils/http-error';
-import { hasPermission } from '@/utils/permission';
 import {
 	ArrowLeft,
 	CircleAlert,
@@ -29,10 +29,9 @@ export function PrescriptionWorkspace({
 	patientId,
 	treatmentId,
 }: PrescriptionWorkspaceProps) {
-	const { data: session, status } = useSession();
-	const canRead = hasPermission(session?.user?.permissions, [
-		Permission.MEDICAL_RECORDS_MANAGE_ALL,
-	]);
+	const { data: session } = useSession();
+	const { status, hasPermission } = usePermissions();
+	const canRead = hasPermission([Permission.MEDICAL_RECORDS_MANAGE_ALL]);
 	const summaryQuery = usePatientClinicalSummary(patientId, canRead);
 	const planQuery = useTreatmentPlan(patientId, treatmentId, canRead);
 	const treatmentHref = `/dashboard/patients/${patientId}/treatments/${treatmentId}`;

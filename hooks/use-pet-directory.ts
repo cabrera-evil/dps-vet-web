@@ -1,7 +1,7 @@
 import { Permission } from '@/constants/permission';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useGet } from '@/hooks/use-rest';
 import { AppointmentClient } from '@/types/appointment.type';
-import { hasPermission } from '@/utils/permission';
 import { useSession } from 'next-auth/react';
 
 /**
@@ -11,12 +11,9 @@ import { useSession } from 'next-auth/react';
  */
 export function usePetDirectory() {
 	const { data: session } = useSession();
-	const canManageAll = hasPermission(session?.user?.permissions, [
-		Permission.PETS_MANAGE_ALL,
-	]);
-	const canReadUsers = hasPermission(session?.user?.permissions, [
-		Permission.USERS_READ,
-	]);
+	const { hasPermission } = usePermissions();
+	const canManageAll = hasPermission([Permission.PETS_MANAGE_ALL]);
+	const canReadUsers = hasPermission([Permission.USERS_READ]);
 
 	const { data: users } = useGet<AppointmentClient[]>(
 		{ path: '/users', params: { pageSize: 100 } },

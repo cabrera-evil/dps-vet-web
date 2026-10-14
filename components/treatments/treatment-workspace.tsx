@@ -6,11 +6,10 @@ import { PatientRecordSkeleton } from '@/components/patients/patient-record-skel
 import { Button } from '@/components/ui/button';
 import { Permission } from '@/constants/permission';
 import { usePatientClinicalSummary } from '@/hooks/use-patient-record';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useTreatmentPlan } from '@/hooks/use-treatments';
 import { isNotFoundError } from '@/utils/http-error';
-import { hasPermission } from '@/utils/permission';
 import { CircleAlert, FileQuestion, ShieldAlert } from 'lucide-react';
-import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { TreatmentDetail } from './treatment-detail';
 
@@ -24,13 +23,9 @@ export function TreatmentWorkspace({
 	patientId,
 	treatmentId,
 }: TreatmentWorkspaceProps) {
-	const { data: session, status } = useSession();
-	const permissions = session?.user?.permissions;
-	const canRead = hasPermission(permissions, [
-		Permission.MEDICAL_RECORDS_MANAGE_ALL,
-	]);
-	const canWrite =
-		canRead && hasPermission(permissions, [Permission.MEDICAL_RECORDS_WRITE]);
+	const { status, hasPermission } = usePermissions();
+	const canRead = hasPermission([Permission.MEDICAL_RECORDS_MANAGE_ALL]);
+	const canWrite = canRead && hasPermission([Permission.MEDICAL_RECORDS_WRITE]);
 	const summaryQuery = usePatientClinicalSummary(patientId, canRead);
 	const planQuery = useTreatmentPlan(patientId, treatmentId, canRead);
 

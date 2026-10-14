@@ -21,11 +21,10 @@ import {
 import { queryClient } from '@/constants/environment';
 import { Permission } from '@/constants/permission';
 import { RoleName } from '@/constants/roles';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useGet, usePatch } from '@/hooks/use-rest';
 import { SystemUser } from '@/types/user.type';
-import { hasPermission } from '@/utils/permission';
 import { Search } from 'lucide-react';
-import { useSession } from 'next-auth/react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -42,7 +41,7 @@ function roleLabel(role: string) {
 }
 
 export function UsersTable() {
-	const { data: session } = useSession();
+	const { hasPermission } = usePermissions();
 	const [query, setQuery] = useState('');
 	const [roleFilter, setRoleFilter] = useState<string | null>(null);
 	const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -52,9 +51,7 @@ export function UsersTable() {
 	});
 	const { mutateAsync: updateRole } = usePatch();
 
-	const canUpdate = hasPermission(session?.user?.permissions, [
-		Permission.USERS_UPDATE,
-	]);
+	const canUpdate = hasPermission([Permission.USERS_UPDATE]);
 
 	const filtered = useMemo(() => {
 		const normalized = query.trim().toLowerCase();

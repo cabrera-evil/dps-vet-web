@@ -34,13 +34,12 @@ import { Permission } from '@/constants/permission';
 import { useBreeds } from '@/hooks/use-breeds';
 import { useClients } from '@/hooks/use-clients';
 import { invalidatePatientRecord } from '@/hooks/use-patient-record';
+import { usePermissions } from '@/hooks/use-permissions';
 import { usePatch, usePost } from '@/hooks/use-rest';
 import { PetFormValues, petFormSchema } from '@/schemas/pet.schema';
 import { Pet } from '@/types/pet.type';
-import { hasPermission } from '@/utils/permission';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Pencil, Plus } from 'lucide-react';
-import { useSession } from 'next-auth/react';
 import { ReactElement, useState } from 'react';
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -68,20 +67,14 @@ type PetFormDialogProps =
 export function PetFormDialog(props: PetFormDialogProps) {
 	const { mode, trigger } = props;
 	const [open, setOpen] = useState(false);
-	const { data: session } = useSession();
+	const { hasPermission } = usePermissions();
 	// Weight is clinical data: only staff can record the one taken at the front desk.
 	const canRecordWeight =
-		mode === 'create' &&
-		hasPermission(session?.user?.permissions, [
-			Permission.MEDICAL_RECORDS_MANAGE_ALL,
-		]);
+		mode === 'create' && hasPermission([Permission.MEDICAL_RECORDS_MANAGE_ALL]);
 	// Staff register pets on behalf of a client; a client always owns their own.
 	const canSelectOwner =
 		mode === 'create' &&
-		hasPermission(session?.user?.permissions, [
-			Permission.PETS_MANAGE_ALL,
-			Permission.USERS_READ,
-		]);
+		hasPermission([Permission.PETS_MANAGE_ALL, Permission.USERS_READ]);
 	const { clients, isLoading: isLoadingClients } = useClients(
 		canSelectOwner && open
 	);

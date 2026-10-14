@@ -18,6 +18,20 @@ export interface DashboardNavItem {
 	 * matches the corresponding API route's own auth requirement. */
 	permissions?: Permission[];
 	mode?: 'any' | 'all';
+	/** Permission that marks the staff view; without it, `clientTitle` is shown. */
+	staffPermission?: Permission;
+	clientTitle?: string;
+}
+
+export function getNavTitle(
+	item: DashboardNavItem,
+	has: (required: Permission[]) => boolean
+): string {
+	return item.clientTitle &&
+		item.staffPermission &&
+		!has([item.staffPermission])
+		? item.clientTitle
+		: item.title;
 }
 
 export const dashboardNavItems: DashboardNavItem[] = [
@@ -27,12 +41,16 @@ export const dashboardNavItems: DashboardNavItem[] = [
 		href: '/dashboard/appointments',
 		icon: CalendarDays,
 		permissions: [Permission.APPOINTMENTS_READ],
+		staffPermission: Permission.APPOINTMENTS_MANAGE_ALL,
+		clientTitle: 'Mis Citas',
 	},
 	{
 		title: 'Pacientes',
 		href: '/dashboard/patients',
 		icon: PawPrint,
 		permissions: [Permission.PETS_READ],
+		staffPermission: Permission.PETS_MANAGE_ALL,
+		clientTitle: 'Mis Mascotas',
 	},
 	{
 		title: 'Servicios Clínicos',

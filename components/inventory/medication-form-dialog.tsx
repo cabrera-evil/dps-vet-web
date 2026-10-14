@@ -16,16 +16,15 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { queryClient } from '@/constants/environment';
 import { Permission } from '@/constants/permission';
+import { usePermissions } from '@/hooks/use-permissions';
 import { usePatch, usePost } from '@/hooks/use-rest';
 import {
 	MedicationFormValues,
 	medicationFormSchema,
 } from '@/schemas/medication.schema';
 import { Medication } from '@/types/medication.type';
-import { hasPermission } from '@/utils/permission';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Pencil, Plus } from 'lucide-react';
-import { useSession } from 'next-auth/react';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -44,7 +43,7 @@ type MedicationFormDialogProps =
 
 export function MedicationFormDialog(props: MedicationFormDialogProps) {
 	const { mode } = props;
-	const { data: session } = useSession();
+	const { hasPermission } = usePermissions();
 	const [open, setOpen] = useState(false);
 	const { mutateAsync: createMedication, isPending: isCreating } = usePost();
 	const { mutateAsync: updateMedication, isPending: isUpdating } = usePatch();
@@ -59,9 +58,7 @@ export function MedicationFormDialog(props: MedicationFormDialogProps) {
 		defaultValues: DEFAULT_VALUES,
 	});
 
-	const canWrite = hasPermission(session?.user?.permissions, [
-		Permission.MEDICATIONS_WRITE,
-	]);
+	const canWrite = hasPermission([Permission.MEDICATIONS_WRITE]);
 	if (!canWrite) return null;
 
 	function handleOpenChange(nextOpen: boolean) {
