@@ -8,6 +8,7 @@ namespace NodeJS {
 		NEXT_PUBLIC_GOOGLE_SITES_VERIFICATION: string;
 		AUTH_SECRET: string;
 		AUTH_DEBUG?: boolean;
+		ALLOWED_DEV_ORIGINS?: string;
 		FIREBASE_PROJECT_ID: string;
 		FIREBASE_CLIENT_EMAIL: string;
 		FIREBASE_PRIVATE_KEY: string;

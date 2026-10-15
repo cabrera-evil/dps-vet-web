@@ -7,6 +7,13 @@ const nextConfig = {
 	// serverless output layout, not the standalone bundle.
 	...(process.env.VERCEL ? {} : { output: 'standalone' }),
 	serverExternalPackages: ['firebase-admin'],
+	// Dev only (ignored in production): hosts allowed to load dev resources such as
+	// /_next/hmr (phones on the LAN, emulators via 10.0.2.2). Comma-separated in
+	// ALLOWED_DEV_ORIGINS, e.g. "192.168.*.*,10.*.*.*"; each '*' matches one segment.
+	allowedDevOrigins: (process.env.ALLOWED_DEV_ORIGINS ?? '')
+		.split(',')
+		.map((origin) => origin.trim())
+		.filter(Boolean),
 	images: {
 		remotePatterns: [
 			{
