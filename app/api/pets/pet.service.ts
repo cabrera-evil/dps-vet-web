@@ -8,6 +8,7 @@ import type {
 	FirestoreQueryOptions,
 	WithId,
 } from '@/app/api/_shared/repository/repository.types';
+import type { AppointmentRepository } from '@/app/api/appointments/appointment.repository';
 import type { Breed } from '@/app/api/breeds/breed.schema';
 import type { User } from '@/app/api/users/user.schema';
 import { Permission } from '@/constants/permission';
@@ -37,7 +38,8 @@ export class PetService {
 	constructor(
 		private readonly repo: PetRepository & FirestoreCrudRepository<Pet>,
 		private readonly breedRepo: FirestoreReadRepository<Breed>,
-		private readonly userRepo: FirestoreReadRepository<User>
+		private readonly userRepo: FirestoreReadRepository<User>,
+		private readonly appointmentRepo: AppointmentRepository
 	) {}
 
 	private canManageAll(identity: Identity): boolean {
@@ -160,6 +162,6 @@ export class PetService {
 
 	async remove(identity: Identity, id: string): Promise<void> {
 		await this.getById(identity, id);
-		await this.repo.delete(id);
+		await this.appointmentRepo.deletePetCancellingUpcoming(id);
 	}
 }

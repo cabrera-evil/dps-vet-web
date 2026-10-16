@@ -8,6 +8,9 @@ import type { Appointment } from './appointment.schema';
 
 const COLLECTION = 'appointments';
 const DAY_LOCKS_COLLECTION = 'appointment-day-locks';
+const PETS_COLLECTION = 'pets';
+// 500 writes/transaction: leaves room for the pet delete + day-lock sets.
+const MAX_CASCADE_APPOINTMENTS = 400;
 
 type SlotInterval = { start: string; end: string };
 type DayLock = { slots: Record<string, SlotInterval> };
@@ -141,6 +144,72 @@ export class AppointmentRepository extends FirestoreRepository<Appointment> {
 					id,
 					status: AppointmentStatus.CANCELLED,
 				};
+			});
+		} catch (error) {
+			throw mapFirebaseError(error);
+		}
+	}
+
+	/**
+	 * Deletes pet `petId` and cancels its upcoming `PENDING`/`CONFIRMED`
+	 * appointments (freeing their day-lock slots exactly like
+	 * {@link cancelAndFreeSlot}) in ONE transaction, so no orphaned active
+	 * appointment can survive the pet. Past and finished/cancelled
+	 * appointments are left untouched as history.
+	 *
+	 * Query is `petId ==` + `start >` (covered by the existing
+	 * petId/start composite index); status is filtered in memory.
+	 * ponytail: a transaction caps at 500 writes (1 pet delete + 1 update per
+	 * appointment + 1 per distinct day-lock); we reject above
+	 * MAX_CASCADE_APPOINTMENTS upcoming appointments rather than risk a
+	 * partial commit. Chunk (cancel first, then delete pet) if that bites.
+	 */
+	async deletePetCancellingUpcoming(petId: string): Promise<void> {
+		try {
+			await firestore().runTransaction(async (transaction) => {
+				const upcoming = await transaction.get(
+					this.collection
+						.where('petId', '==', petId)
+						.where('start', '>', new Date().toISOString())
+						.limit(MAX_CASCADE_APPOINTMENTS + 1)
+				);
+				if (upcoming.size > MAX_CASCADE_APPOINTMENTS)
+					throw new createHttpError.UnprocessableEntity(
+						'Pet has too many upcoming appointments; cancel some first'
+					);
+				const active = upcoming.docs.filter((doc) => {
+					const { status } = doc.data() as Appointment;
+					return (
+						status === AppointmentStatus.PENDING ||
+						status === AppointmentStatus.CONFIRMED
+					);
+				});
+
+				// Reads must all precede writes: load each affected day lock once.
+				const dayKeys = [
+					...new Set(
+						active.map((doc) => (doc.data() as Appointment).start.slice(0, 10))
+					),
+				];
+				const lockRefs = dayKeys.map((key) =>
+					firestore().collection(DAY_LOCKS_COLLECTION).doc(key)
+				);
+				const lockSnapshots = await Promise.all(
+					lockRefs.map((ref) => transaction.get(ref))
+				);
+
+				lockSnapshots.forEach((snapshot, index) => {
+					const slots = {
+						...((snapshot.data() as DayLock | undefined)?.slots ?? {}),
+					};
+					for (const doc of active)
+						if ((doc.data() as Appointment).start.startsWith(dayKeys[index]))
+							delete slots[doc.id];
+					transaction.set(lockRefs[index], { slots }, { merge: true });
+				});
+				for (const doc of active)
+					transaction.update(doc.ref, { status: AppointmentStatus.CANCELLED });
+				transaction.delete(firestore().collection(PETS_COLLECTION).doc(petId));
 			});
 		} catch (error) {
 			throw mapFirebaseError(error);

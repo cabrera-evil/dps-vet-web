@@ -1,3 +1,4 @@
+import { AppointmentRepository } from '@/app/api/appointments/appointment.repository';
 import { BreedRepository } from '@/app/api/breeds/breed.repository';
 import { UserRepository } from '@/app/api/users/user.repository';
 import { PetController } from './pet.controller';
@@ -13,6 +14,11 @@ import { PetService } from './pet.service';
 const repository = new PetRepository();
 const breedRepository = new BreedRepository();
 const userRepository = new UserRepository();
-const service = new PetService(repository, breedRepository, userRepository);
+const service = new PetService(
+	repository,
+	breedRepository,
+	userRepository,
+	new AppointmentRepository()
+);
 
 export const petController = new PetController(service);
