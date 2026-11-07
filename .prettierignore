@@ -21,4 +21,4 @@ CHANGELOG.md
 # local tooling output (globally git-ignored)
 .atl
 openspec
-docs/agent-orchestration
+.orchestrator
