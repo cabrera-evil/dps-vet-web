@@ -1,0 +1,44 @@
+rules_version = '2';
+
+// Defense in depth only.
+// ALL production access goes through the Next.js API using the Firebase Admin
+// SDK, which bypasses these rules. Clients (web and mobile) never talk to
+// Firestore directly. Validation and authorization live in the API.
+// These rules therefore: deny everything by default, allow owner-scoped READ
+// where an ownership field matching the Auth uid exists in the code, and deny
+// every client write (writes are server-mediated).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Profile: document id is the Auth uid (user.service.ts creates it with uid).
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false;
+    }
+
+    // Pets: `ownerId` is the owner's uid.
+    match /pets/{petId} {
+      allow read: if request.auth != null
+        && resource.data.ownerId == request.auth.uid;
+      allow write: if false;
+    }
+
+    // Appointments: `clientId` is the client's uid.
+    match /appointments/{appointmentId} {
+      allow read: if request.auth != null
+        && resource.data.clientId == request.auth.uid;
+      allow write: if false;
+    }
+
+    // Staff access is NOT granted here: it depends on the `permissions` custom
+    // claim, which is checked in the API and not verified for rules use.
+    // Clinical records, catalogs, roles, orders, locks, etc. stay denied;
+    // they are keyed by petId (no uid on the document), so owner-read would
+    // need a cross-document lookup that is not worth the risk.
+
+    // Default deny.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
