@@ -15,6 +15,7 @@ namespace NodeJS {
 		FIREBASE_STORAGE_BUCKET: string;
 		FIREBASE_DATABASE_URL: string;
 		FIREBASE_WEB_API_KEY: string;
+		GOOGLE_OAUTH_CLIENT_IDS: string;
 		ADMIN_EMAIL?: string;
 		ADMIN_PASSWORD?: string;
 		ADMIN_NAME?: string;

@@ -1,3 +1,4 @@
+import createHttpError from 'http-errors';
 import type { FirebaseAdminConfig } from './firebase.types';
 
 const REQUIRED_ENV_KEYS = [
@@ -35,3 +36,25 @@ export function getFirebaseAdminConfig(): FirebaseAdminConfig {
 
 	return cachedConfig;
 }
+
+/** Fails fast with a controlled 500 naming only the variable, never its value. */
+function requireEnv(key: 'FIREBASE_WEB_API_KEY' | 'GOOGLE_OAUTH_CLIENT_IDS') {
+	const value = process.env[key]?.trim();
+	if (!value)
+		throw createHttpError(
+			500,
+			`Missing required environment variable: ${key}`,
+			{ expose: true }
+		);
+	return value;
+}
+
+/** Firebase Web API key used by the Identity Toolkit REST helpers. */
+export const getFirebaseWebApiKey = () => requireEnv('FIREBASE_WEB_API_KEY');
+
+/** Allowed Google OAuth client IDs (`aud`), from the comma-separated env var. */
+export const getGoogleOAuthClientIds = () =>
+	requireEnv('GOOGLE_OAUTH_CLIENT_IDS')
+		.split(',')
+		.map((id) => id.trim())
+		.filter(Boolean);
