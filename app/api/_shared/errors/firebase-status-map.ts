@@ -32,6 +32,11 @@ export const FIREBASE_STATUS_BY_CODE: Record<string, number> = {
 	INVALID_LOGIN_CREDENTIALS: StatusCodes.UNAUTHORIZED,
 	USER_DISABLED: StatusCodes.FORBIDDEN,
 	TOO_MANY_ATTEMPTS_TRY_LATER: StatusCodes.TOO_MANY_REQUESTS,
+	// accounts:signInWithIdp (Google sign-in).
+	INVALID_IDP_RESPONSE: StatusCodes.UNAUTHORIZED,
+	MISSING_OR_INVALID_NONCE: StatusCodes.UNAUTHORIZED,
+	EMAIL_EXISTS: StatusCodes.CONFLICT,
+	FEDERATED_USER_ID_ALREADY_LINKED: StatusCodes.CONFLICT,
 	// accounts:sendOobCode / accounts:resetPassword (forgot/reset password).
 	INVALID_OOB_CODE: StatusCodes.BAD_REQUEST,
 	EXPIRED_OOB_CODE: StatusCodes.BAD_REQUEST,
