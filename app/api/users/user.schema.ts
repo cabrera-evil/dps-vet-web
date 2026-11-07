@@ -4,7 +4,8 @@ export const userSchema = z.object({
 	uid: z.string().min(1),
 	name: z.string().min(1).max(120),
 	email: z.string().email(),
-	phone: z.string().min(1).max(30),
+	// May be empty: Google sign-in provisions profiles without a phone.
+	phone: z.string().max(30),
 	role: z.string().min(1).max(50),
 	createdAt: z.string(),
 });

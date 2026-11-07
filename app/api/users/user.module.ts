@@ -9,6 +9,6 @@ import { UserService } from './user.service';
  */
 const userRepository = new UserRepository();
 const roleRepository = new RoleRepository();
-const service = new UserService(userRepository, roleRepository);
+export const userService = new UserService(userRepository, roleRepository);
 
-export const userController = new UserController(service);
+export const userController = new UserController(userService);

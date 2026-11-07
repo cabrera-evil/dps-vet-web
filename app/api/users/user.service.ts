@@ -112,6 +112,42 @@ export class UserService {
 	}
 
 	/**
+	 * Ensures a Google-authenticated Firebase user has a `users/{uid}` profile.
+	 * Creates a CLIENTE profile with an empty phone on first sign-in; an existing
+	 * profile is never touched (role and fields are preserved). The role is the
+	 * server-side default, never caller input.
+	 */
+	async provisionGoogleUser(
+		uid: string,
+		input: { email: string; name?: string }
+	): Promise<void> {
+		if (await this.repo.exists(uid)) return;
+
+		const permissions = await this.resolvePermissions(
+			DEFAULT_REGISTRATION_ROLE
+		);
+		try {
+			await auth().setCustomUserClaims(uid, { permissions });
+		} catch (error) {
+			throw mapFirebaseError(error);
+		}
+
+		// ponytail: exists-then-set is not atomic; two simultaneous first
+		// sign-ins write identical data. Use a Firestore create() if that changes.
+		await this.repo.create(
+			{
+				uid,
+				name: (input.name || input.email.split('@')[0]).slice(0, 120),
+				email: input.email,
+				phone: '',
+				role: DEFAULT_REGISTRATION_ROLE,
+				createdAt: new Date().toISOString(),
+			},
+			uid
+		);
+	}
+
+	/**
 	 * Changes a user's role: resolves the new role's permissions, updates the
 	 * Firebase custom claim, then the Firestore `role` field — in that order,
 	 * in one method, so the claim and the stored role can't drift apart.
