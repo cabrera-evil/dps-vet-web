@@ -54,6 +54,8 @@ export class PetController {
 		identity: Identity,
 		id: string
 	): Promise<NextResponse> {
+		// Ownership first, so a non-owner gets 404 without the body being read.
+		await this.service.getById(identity, id);
 		const image = await parseFormImage(request, 'photo');
 		return ok(await this.service.setPhoto(identity, id, image));
 	}

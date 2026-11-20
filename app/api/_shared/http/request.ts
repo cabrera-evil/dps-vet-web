@@ -21,6 +21,8 @@ export async function parseBody<S extends z.ZodTypeAny>(
 }
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
+/** File limit plus room for the multipart envelope. */
+const MAX_BODY_BYTES = MAX_FILE_BYTES + 512 * 1024;
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 /**
@@ -32,6 +34,11 @@ export async function parseFormImage(
 	request: Request,
 	field: string
 ): Promise<Buffer> {
+	// ponytail: only the declared length is checked; a chunked body without
+	// content-length is still buffered whole. Byte-counting stream if abuse matters
+	// (a TransformStream over request.body crashed Node 24 when it cut the body).
+	if (Number(request.headers.get('content-length')) > MAX_BODY_BYTES)
+		throw new createHttpError.PayloadTooLarge('Image must be 5 MB or smaller');
 	let form: FormData;
 	try {
 		form = await request.formData();
