@@ -14,12 +14,15 @@ export const petSchema = z.object({
 	color: z.string().max(60).optional(),
 	markings: z.string().max(300).optional(),
 	microchip: z.string().max(40).optional(),
+	/** Server-set by the photo endpoints; never accepted from create/update bodies. */
+	photoUrl: z.string().url().optional(),
 	createdAt: z.string(),
 });
 
-/** Client payload — `ownerId`/`createdAt` are set server-side from the caller identity. */
+/** Client payload — `ownerId`/`createdAt`/`photoUrl` are set server-side. */
 const petInputSchema = petSchema.omit({
 	ownerId: true,
+	photoUrl: true,
 	createdAt: true,
 });
 

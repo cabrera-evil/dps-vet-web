@@ -20,6 +20,34 @@ export async function parseBody<S extends z.ZodTypeAny>(
 	return schema.parse(json);
 }
 
+const MAX_FILE_BYTES = 5 * 1024 * 1024;
+const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+/**
+ * Reads one image from a multipart field. A missing field, a MIME type outside
+ * jpeg/png/webp or a file over 5 MB raises a `400`. The MIME type is only the
+ * client's claim: callers must still decode the bytes.
+ */
+export async function parseFormImage(
+	request: Request,
+	field: string
+): Promise<Buffer> {
+	let form: FormData;
+	try {
+		form = await request.formData();
+	} catch {
+		throw new createHttpError.BadRequest('Invalid multipart body');
+	}
+	const file = form.get(field);
+	if (!(file instanceof File))
+		throw new createHttpError.BadRequest(`${field} file is required`);
+	if (!IMAGE_TYPES.includes(file.type))
+		throw new createHttpError.BadRequest('Only JPEG, PNG or WebP images');
+	if (file.size > MAX_FILE_BYTES)
+		throw new createHttpError.BadRequest('Image must be 5 MB or smaller');
+	return Buffer.from(await file.arrayBuffer());
+}
+
 /** Parses and validates the query string. Use `z.coerce.*` for numeric params. */
 export function parseSearchParams<S extends z.ZodTypeAny>(
 	request: NextRequest,
