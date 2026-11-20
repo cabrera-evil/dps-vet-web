@@ -21,6 +21,7 @@ export interface PatientIdentity {
 	color?: string;
 	markings?: string;
 	microchip?: string;
+	photoUrl?: string;
 	status: ItemStatus;
 	ownerName?: string;
 	ownerPhone?: string;

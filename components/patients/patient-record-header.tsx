@@ -1,5 +1,5 @@
 import { ClinicalAlertList } from '@/components/clinical/clinical-alert-list';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { PATIENT_STATUS_LABEL, PET_SEX_LABEL } from '@/constants/clinical';
@@ -60,6 +60,9 @@ export function PatientRecordHeader({
 			<div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
 				<div className="flex items-start gap-4">
 					<Avatar className="size-14 text-lg">
+						{patient.photoUrl && (
+							<AvatarImage src={patient.photoUrl} alt={patient.name} />
+						)}
 						<AvatarFallback>
 							{patient.name.slice(0, 2).toUpperCase()}
 						</AvatarFallback>
