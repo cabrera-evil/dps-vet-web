@@ -3,7 +3,7 @@
 import { PetDeleteDialog } from '@/components/patients/pet-delete-dialog';
 import { PetFormDialog } from '@/components/patients/pet-form-dialog';
 import { TableSkeletonRows } from '@/components/table/table-skeleton-rows';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -82,6 +82,9 @@ export function PatientsTable() {
 										<TableCell>
 											<div className="flex items-center gap-2">
 												<Avatar className="size-8">
+													{pet.photoUrl && (
+														<AvatarImage src={pet.photoUrl} alt={pet.name} />
+													)}
 													<AvatarFallback>
 														{pet.name.slice(0, 2).toUpperCase()}
 													</AvatarFallback>

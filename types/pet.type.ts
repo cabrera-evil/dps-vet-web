@@ -13,6 +13,7 @@ export interface Pet {
 	color?: string;
 	markings?: string;
 	microchip?: string;
+	photoUrl?: string;
 	createdAt: string;
 }
 
