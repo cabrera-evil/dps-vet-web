@@ -1,5 +1,9 @@
 import type { Identity } from '@/app/api/_shared/http/http.types';
-import { parseBody, parseSearchParams } from '@/app/api/_shared/http/request';
+import {
+	parseBody,
+	parseFormImage,
+	parseSearchParams,
+} from '@/app/api/_shared/http/request';
 import { created, noContent, ok } from '@/app/api/_shared/http/response';
 import type { NextRequest, NextResponse } from 'next/server';
 import {
@@ -43,5 +47,18 @@ export class PetController {
 	async remove(identity: Identity, id: string): Promise<NextResponse> {
 		await this.service.remove(identity, id);
 		return noContent();
+	}
+
+	async setPhoto(
+		request: Request,
+		identity: Identity,
+		id: string
+	): Promise<NextResponse> {
+		const image = await parseFormImage(request, 'photo');
+		return ok(await this.service.setPhoto(identity, id, image));
+	}
+
+	async removePhoto(identity: Identity, id: string): Promise<NextResponse> {
+		return ok(await this.service.removePhoto(identity, id));
 	}
 }

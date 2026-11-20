@@ -14,8 +14,10 @@ import type { User } from '@/app/api/users/user.schema';
 import { Permission } from '@/constants/permission';
 import { RoleName } from '@/constants/roles';
 import { hasPermission } from '@/utils/permission';
+import * as Sentry from '@sentry/nextjs';
 import { FieldValue, type UpdateData } from 'firebase-admin/firestore';
 import createHttpError from 'http-errors';
+import sharp from 'sharp';
 import type { PetRepository } from './pet.repository';
 import type {
 	CreatePetInput,
@@ -163,5 +165,52 @@ export class PetService {
 	async remove(identity: Identity, id: string): Promise<void> {
 		await this.getById(identity, id);
 		await this.appointmentRepo.deletePetCancellingUpcoming(id);
+	}
+
+	/**
+	 * Re-encodes the upload (max 1024 px, JPEG) so what is stored is always a
+	 * decodable image, then swaps it in as the pet's photo.
+	 */
+	async setPhoto(
+		identity: Identity,
+		id: string,
+		image: Buffer
+	): Promise<WithId<Pet>> {
+		const pet = await this.getById(identity, id);
+
+		let jpeg: Buffer;
+		try {
+			jpeg = await sharp(image)
+				.rotate()
+				.resize(1024, 1024, { fit: 'inside', withoutEnlargement: true })
+				.jpeg()
+				.toBuffer();
+		} catch {
+			throw new createHttpError.BadRequest('Invalid image');
+		}
+
+		const photoUrl = await this.repo.uploadPhoto(id, jpeg);
+		await this.repo.update(id, { photoUrl });
+		await this.discardPhoto(pet.photoUrl);
+		return this.getById(identity, id);
+	}
+
+	async removePhoto(identity: Identity, id: string): Promise<WithId<Pet>> {
+		const pet = await this.getById(identity, id);
+		if (!pet.photoUrl) return pet;
+
+		await this.repo.update(id, { photoUrl: FieldValue.delete() });
+		await this.discardPhoto(pet.photoUrl);
+		return this.getById(identity, id);
+	}
+
+	/** Best effort: the pet is already updated, so an orphaned object is reported, never failed. */
+	private async discardPhoto(photoUrl?: string): Promise<void> {
+		if (!photoUrl) return;
+		try {
+			await this.repo.deletePhoto(photoUrl);
+		} catch (error) {
+			Sentry.captureException(error);
+		}
 	}
 }

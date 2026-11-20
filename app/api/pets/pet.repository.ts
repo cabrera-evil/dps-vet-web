@@ -1,10 +1,11 @@
 import { mapFirebaseError } from '@/app/api/_shared/errors/firebase-error';
-import { firestore } from '@/app/api/_shared/firebase';
+import { firestore, storage } from '@/app/api/_shared/firebase';
 import { FirestoreRepository } from '@/app/api/_shared/repository/firestore.repository';
 import type { WithId } from '@/app/api/_shared/repository/repository.types';
 import { MEASUREMENTS_COLLECTION } from '@/app/api/consultations/clinical-measurement.repository';
 import { MEASUREMENT_SOURCES } from '@/app/api/consultations/clinical-measurement.schema';
 import { ClinicalMeasurementType } from '@/constants/enum';
+import { randomUUID } from 'node:crypto';
 import type { Pet } from './pet.schema';
 
 const COLLECTION = 'pets';
@@ -50,5 +51,34 @@ export class PetRepository extends FirestoreRepository<Pet> {
 		} catch (error) {
 			throw mapFirebaseError(error);
 		}
+	}
+
+	/**
+	 * Stores a JPEG under a unique path (so the URL changes on every replace)
+	 * and returns its permanent download-token URL; the bucket itself stays
+	 * closed to clients (see `storage.rules`).
+	 */
+	async uploadPhoto(petId: string, jpeg: Buffer): Promise<string> {
+		try {
+			const bucket = storage().bucket();
+			const path = `pets/${petId}/photo-${Date.now()}.jpg`;
+			const token = randomUUID();
+			await bucket.file(path).save(jpeg, {
+				contentType: 'image/jpeg',
+				metadata: { metadata: { firebaseStorageDownloadTokens: token } },
+			});
+			return `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(path)}?alt=media&token=${token}`;
+		} catch (error) {
+			throw mapFirebaseError(error);
+		}
+	}
+
+	/** Deletes the object behind a URL from {@link uploadPhoto}; the path is derived from the URL. */
+	async deletePhoto(photoUrl: string): Promise<void> {
+		const encodedPath = new URL(photoUrl).pathname.split('/o/')[1];
+		await storage()
+			.bucket()
+			.file(decodeURIComponent(encodedPath))
+			.delete({ ignoreNotFound: true });
 	}
 }
