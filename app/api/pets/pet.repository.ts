@@ -76,6 +76,7 @@ export class PetRepository extends FirestoreRepository<Pet> {
 	/** Deletes the object behind a URL from {@link uploadPhoto}; the path is derived from the URL. */
 	async deletePhoto(photoUrl: string): Promise<void> {
 		const encodedPath = new URL(photoUrl).pathname.split('/o/')[1];
+		if (!encodedPath) return;
 		await storage()
 			.bucket()
 			.file(decodeURIComponent(encodedPath))

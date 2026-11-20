@@ -27,6 +27,9 @@ import type {
 } from './pet.schema';
 import type { PetListResult } from './pet.types';
 
+const MAX_INPUT_PIXELS = 40_000_000;
+const PHOTO_FORMATS = ['jpeg', 'png', 'webp'];
+
 /**
  * Pet domain logic. Depends on the {@link FirestoreCrudRepository}
  * abstraction (DIP) — the concrete repository is chosen in `pet.module.ts`.
@@ -180,7 +183,12 @@ export class PetService {
 
 		let jpeg: Buffer;
 		try {
-			jpeg = await sharp(image)
+			const img = sharp(image, { limitInputPixels: MAX_INPUT_PIXELS });
+			// The MIME type is the client's claim: check what the bytes really are.
+			const { format } = await img.metadata();
+			if (!format || !PHOTO_FORMATS.includes(format))
+				throw new Error('Unsupported image format');
+			jpeg = await img
 				.rotate()
 				.resize(1024, 1024, { fit: 'inside', withoutEnlargement: true })
 				.jpeg()
@@ -190,7 +198,12 @@ export class PetService {
 		}
 
 		const photoUrl = await this.repo.uploadPhoto(id, jpeg);
-		await this.repo.update(id, { photoUrl });
+		try {
+			await this.repo.update(id, { photoUrl });
+		} catch (error) {
+			await this.discardPhoto(photoUrl);
+			throw error;
+		}
 		await this.discardPhoto(pet.photoUrl);
 		return this.getById(identity, id);
 	}
