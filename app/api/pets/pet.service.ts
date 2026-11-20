@@ -166,8 +166,9 @@ export class PetService {
 	}
 
 	async remove(identity: Identity, id: string): Promise<void> {
-		await this.getById(identity, id);
+		const pet = await this.getById(identity, id);
 		await this.appointmentRepo.deletePetCancellingUpcoming(id);
+		await this.discardPhoto(pet.photoUrl);
 	}
 
 	/**
