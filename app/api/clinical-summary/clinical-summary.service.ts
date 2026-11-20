@@ -125,6 +125,7 @@ export class ClinicalSummaryService {
 				color: pet.color,
 				markings: pet.markings,
 				microchip: pet.microchip,
+				photoUrl: pet.photoUrl,
 				recordNumber: `EXP-${petId.slice(0, 6).toUpperCase()}`,
 				status: ItemStatus.ACTIVE,
 			},

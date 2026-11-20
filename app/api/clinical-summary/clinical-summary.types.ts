@@ -14,6 +14,7 @@ type SummaryPatient = Pick<
 	| 'color'
 	| 'markings'
 	| 'microchip'
+	| 'photoUrl'
 > & {
 	id: string;
 	recordNumber: string;
