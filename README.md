@@ -276,3 +276,7 @@ separate deployment and live smoke test.
 - [`docs/roadmap.md`](docs/roadmap.md) — Firebase integration roadmap
 - [`docs/roadmap/frontend.md`](docs/roadmap/frontend.md) — frontend roadmap
 - [`docs/roadmap/backend.md`](docs/roadmap/backend.md) — API/backend roadmap
+
+## License
+
+This project is licensed under [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/). See [LICENSE](LICENSE).
