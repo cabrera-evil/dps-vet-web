@@ -8,19 +8,20 @@ records, appointments, services, inventory, orders, users, and reports.
 This repository is the web client and web/API application. The companion mobile
 application is maintained separately.
 
-## Phase 2 submission
+## Final delivery
 
-The Phase 2 submission contains the following project information:
+The final delivery contains the following project information:
 
 - Institution: Universidad Don Bosco
 - Course: Diseño y Programación de Software Multiplataforma — DPS941
-- Deliverable: Fase 2 del proyecto
+- Deliverable: Entrega final del proyecto (Etapa 3)
 - Students: Diana Raquel Cruz Cruz (CC253591) and Douglas Mauricio Cabrera
   Pineda (CP253590)
 - Instructor: Alexander Sigüenza
-- Date in the document: Sunday, September 20, 2026
 - Web repository: <https://github.com/cabrera-evil/dps-vet-web>
 - Mobile repository: <https://github.com/cabrera-evil/dps-vet-app>
+- Deployed web application: <https://dps-vet-web.vercel.app>
+- License: [CC BY 4.0](LICENSE)
 
 The technical details below are documented from the source code in this
 repository.
@@ -194,6 +195,13 @@ medical records, medications, orders, and reports. Authentication also has
 login, password reset, and forgot-password handlers. Report endpoints require
 bounded date ranges, while domain services enforce ownership and business rules
 on the server.
+
+Pet photos are uploaded to the API (`POST /api/pets/:id/photo`, multipart field
+`photo`, JPEG/PNG/WebP up to 5 MB) and removed with `DELETE /api/pets/:id/photo`.
+The API re-encodes the image (max 1024 px, JPEG), stores it in Firebase Storage
+and saves its download URL in `pets.photoUrl`, which clients cannot set
+directly. `storage.rules` denies all direct client access, and deleting a pet
+also deletes its photo.
 
 Important examples of server-side rules include:
 
