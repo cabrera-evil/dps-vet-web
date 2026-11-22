@@ -1,8 +1,7 @@
+import * as Sentry from '@sentry/nextjs';
+import { v2 as cloudinary, type UploadApiResponse } from 'cloudinary';
 import createHttpError from 'http-errors';
-import { createHash } from 'node:crypto';
 
-const API_BASE = 'https://api.cloudinary.com/v1_1';
-const TIMEOUT_MS = 15_000;
 /** Only ids shaped like the ones this app uploads may ever be destroyed. */
 const OWN_PUBLIC_ID = /^pets\/[A-Za-z0-9_-]+\/photo-\d+$/;
 
@@ -20,82 +19,96 @@ function requireEnv(
 	return value;
 }
 
+/** Cloudinary's own 60 s default would outlive the request, so cap it. */
+const TIMEOUT_MS = 15_000;
+const MAX_LOG_LENGTH = 300;
+
 /**
- * Cloudinary signature: hex SHA-1 of the signed params sorted by name and
- * joined as `k=v&k2=v2`, immediately followed by the API secret. `file`,
- * `api_key`, `cloud_name`, `resource_type` and `signature` are never signed.
+ * Logs only `http_code`, `name` and `message` of an SDK error, with the API
+ * secret, the API key and the signature's string-to-sign redacted, and never
+ * hands the raw error (or Cloudinary's body) to the client.
  */
-export function signParams(
-	params: Record<string, string>,
-	apiSecret: string
-): string {
-	const toSign = Object.keys(params)
-		.sort()
-		.map((key) => `${key}=${params[key]}`)
-		.join('&');
-	return createHash('sha1')
-		.update(toSign + apiSecret)
-		.digest('hex');
+function logFailure(
+	operation: 'upload' | 'destroy',
+	error: unknown,
+	secrets: string[]
+) {
+	// The SDK rejects either with the error itself or with `{ error }`.
+	const { http_code, name, message } = ((error as { error?: unknown })?.error ??
+		error ??
+		{}) as Record<string, unknown>;
+	let line = `Cloudinary ${operation} failed: http_code=${http_code ?? 'n/a'} name=${name ?? 'n/a'} message=${message ?? 'n/a'}`;
+	line = line.replace(/string to sign[\s\S]*$/i, '[redacted]');
+	for (const secret of secrets) line = line.split(secret).join('[redacted]');
+	line = line.slice(0, MAX_LOG_LENGTH);
+	// eslint-disable-next-line no-console -- server log so the cause is visible beyond Sentry
+	console.error(line);
+	Sentry.captureException(new Error(line));
 }
 
-/** Signs `params`, POSTs them to a Cloudinary image endpoint and returns the parsed JSON. */
-async function post(
-	action: 'upload' | 'destroy',
-	params: Record<string, string>,
-	file?: Blob
-): Promise<Record<string, unknown>> {
+/**
+ * Configures the SDK explicitly from our three variables (so a stray
+ * `CLOUDINARY_URL` cannot override them), runs `call`, and turns any failure
+ * into a generic 502 after logging its safe details.
+ */
+async function run<T>(
+	operation: 'upload' | 'destroy',
+	call: () => Promise<T>
+): Promise<T> {
 	const cloudName = requireEnv('CLOUDINARY_CLOUD_NAME');
 	const apiKey = requireEnv('CLOUDINARY_API_KEY');
 	const apiSecret = requireEnv('CLOUDINARY_API_SECRET');
-
-	const signed = {
-		...params,
-		timestamp: String(Math.floor(Date.now() / 1000)),
-	};
-	const body = new FormData();
-	for (const [key, value] of Object.entries(signed)) body.set(key, value);
-	body.set('api_key', apiKey);
-	body.set('signature', signParams(signed, apiSecret));
-	if (file) body.set('file', file, 'photo.jpg');
-
-	// Never forward Cloudinary's response or the underlying error: only a generic message.
-	const unavailable = () =>
-		new createHttpError.BadGateway('Image storage unavailable');
 	try {
-		const response = await fetch(
-			`${API_BASE}/${encodeURIComponent(cloudName)}/image/${action}`,
-			{
-				method: 'POST',
-				body,
-				signal: AbortSignal.timeout(TIMEOUT_MS),
-			}
-		);
-		if (!response.ok) throw unavailable();
-		return (await response.json()) as Record<string, unknown>;
-	} catch {
-		throw unavailable();
+		cloudinary.config({
+			cloud_name: cloudName,
+			api_key: apiKey,
+			api_secret: apiSecret,
+			secure: true,
+		});
+		return await call();
+	} catch (error) {
+		logFailure(operation, error, [apiSecret, apiKey]);
+		throw new createHttpError.BadGateway('Image storage unavailable');
 	}
 }
 
 /** Uploads a JPEG under `publicId` and returns its permanent HTTPS URL. */
-export async function uploadImage(
-	buffer: Buffer,
-	publicId: string
-): Promise<string> {
-	const data = await post(
-		'upload',
-		{ public_id: publicId },
-		new Blob([new Uint8Array(buffer)], { type: 'image/jpeg' })
-	);
-	const url = data.secure_url;
-	if (typeof url !== 'string' || !url.startsWith('https://'))
-		throw new createHttpError.BadGateway('Image storage unavailable');
-	return url;
+export function uploadImage(buffer: Buffer, publicId: string): Promise<string> {
+	return run('upload', async () => {
+		const result = await new Promise<UploadApiResponse>((resolve, reject) =>
+			cloudinary.uploader
+				.upload_stream(
+					{
+						public_id: publicId,
+						resource_type: 'image',
+						timeout: TIMEOUT_MS,
+					},
+					(error, uploaded) =>
+						uploaded
+							? resolve(uploaded)
+							: reject(error ?? new Error('No result'))
+				)
+				.end(buffer)
+		);
+		if (!result.secure_url?.startsWith('https://'))
+			throw new Error('Upload result has no https secure_url');
+		return result.secure_url;
+	});
 }
 
 /** Deletes an image; an already-missing one is not an error. */
-export async function destroyImage(publicId: string): Promise<void> {
-	await post('destroy', { public_id: publicId });
+export function destroyImage(publicId: string): Promise<void> {
+	return run('destroy', async () => {
+		// `timeout` works at runtime but is missing from the SDK's destroy typings.
+		const options = {
+			resource_type: 'image',
+			invalidate: true,
+			timeout: TIMEOUT_MS,
+		} as const;
+		const { result } = await cloudinary.uploader.destroy(publicId, options);
+		if (result !== 'ok' && result !== 'not found')
+			throw new Error(`Unexpected destroy result: ${result}`);
+	});
 }
 
 /**
