@@ -18,6 +18,9 @@ namespace NodeJS {
 		FIREBASE_DATABASE_URL: string;
 		FIREBASE_WEB_API_KEY: string;
 		GOOGLE_OAUTH_CLIENT_IDS: string;
+		CLOUDINARY_CLOUD_NAME: string;
+		CLOUDINARY_API_KEY: string;
+		CLOUDINARY_API_SECRET: string;
 		ADMIN_EMAIL?: string;
 		ADMIN_PASSWORD?: string;
 		ADMIN_NAME?: string;
