@@ -1,3 +1,4 @@
+import { DashboardAppointmentsChart } from '@/components/dashboard/dashboard-appointments-chart';
 import { DashboardGreeting } from '@/components/dashboard/dashboard-greeting';
 import { DashboardLowStock } from '@/components/dashboard/dashboard-low-stock';
 import { DashboardMyPets } from '@/components/dashboard/dashboard-my-pets';
@@ -17,9 +18,12 @@ export default function DashboardPage() {
 				<DashboardStats />
 			</PermissionWrapper>
 			<div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-				<div className="xl:col-span-2">
+				<div className="flex flex-col gap-4 xl:col-span-2">
 					<PermissionWrapper permissions={[Permission.APPOINTMENTS_READ]}>
 						<DashboardUpcomingAppointments />
+					</PermissionWrapper>
+					<PermissionWrapper permissions={[Permission.REPORTS_READ]}>
+						<DashboardAppointmentsChart />
 					</PermissionWrapper>
 				</div>
 				<div className="flex flex-col gap-4">
