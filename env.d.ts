@@ -7,7 +7,7 @@ namespace NodeJS {
 		NEXT_PUBLIC_GOOGLE_ANALYTICS_ID: string;
 		NEXT_PUBLIC_GOOGLE_SITES_VERIFICATION: string;
 		AUTH_SECRET: string;
-		AUTH_DEBUG?: boolean;
+		AUTH_DEBUG?: string;
 		AUTH_GOOGLE_ID?: string;
 		AUTH_GOOGLE_SECRET?: string;
 		ALLOWED_DEV_ORIGINS?: string;

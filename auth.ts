@@ -6,7 +6,8 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import Google from 'next-auth/providers/google';
 
 const nextAuth = NextAuth({
-	debug: process.env.AUTH_DEBUG,
+	debug:
+		process.env.AUTH_DEBUG === 'true' && process.env.NODE_ENV !== 'production',
 	trustHost: true,
 	session: { strategy: 'jwt' },
 	providers: [
