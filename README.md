@@ -77,6 +77,7 @@ groups are:
 | Auth | `AUTH_SECRET`, `AUTH_DEBUG` | NextAuth JWT signing and development diagnostics |
 | Firebase Admin | `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` | Server-side Admin SDK credentials |
 | Firebase services | `FIREBASE_STORAGE_BUCKET`, `FIREBASE_DATABASE_URL`, `FIREBASE_WEB_API_KEY` | Storage, Realtime Database, and server-side identity APIs |
+| Cloudinary | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Pet photo storage (server-only) |
 | Seed administrator | `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME`, `ADMIN_PHONE` | Optional account used only by the seed command |
 | Observability | `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_PROJECT`, `SENTRY_ORG` | Sentry error reporting and source-map configuration |
 | Analytics/ads | `NEXT_PUBLIC_GOOGLE_ANALYTICS_ID`, `NEXT_PUBLIC_GOOGLE_ADSENSE_ID`, `NEXT_PUBLIC_GOOGLE_SITES_VERIFICATION` | Optional browser integrations |
@@ -198,10 +199,11 @@ on the server.
 
 Pet photos are uploaded to the API (`POST /api/pets/:id/photo`, multipart field
 `photo`, JPEG/PNG/WebP up to 5 MB) and removed with `DELETE /api/pets/:id/photo`.
-The API re-encodes the image (max 1024 px, JPEG), stores it in Firebase Storage
-and saves its download URL in `pets.photoUrl`, which clients cannot set
-directly. `storage.rules` denies all direct client access, and deleting a pet
-also deletes its photo.
+The API re-encodes the image (max 1024 px, JPEG), stores it in Cloudinary
+and saves its URL in `pets.photoUrl`, which clients cannot set directly.
+Replacing or removing a photo, or deleting the pet, also deletes the previous
+image. Set `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY` and
+`CLOUDINARY_API_SECRET` (server-only, from the Cloudinary dashboard).
 
 Important examples of server-side rules include:
 
