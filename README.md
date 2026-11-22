@@ -200,7 +200,8 @@ on the server.
 Pet photos are uploaded to the API (`POST /api/pets/:id/photo`, multipart field
 `photo`, JPEG/PNG/WebP up to 5 MB) and removed with `DELETE /api/pets/:id/photo`.
 The API re-encodes the image (max 1024 px, JPEG), stores it in Cloudinary
-and saves its URL in `pets.photoUrl`, which clients cannot set directly.
+(under the `dps-vet/pets/{petId}/` folder of the shared account) and saves its
+URL in `pets.photoUrl`, which clients cannot set directly.
 Replacing or removing a photo, or deleting the pet, also deletes the previous
 image. Set `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY` and
 `CLOUDINARY_API_SECRET` (server-only, from the Cloudinary dashboard).

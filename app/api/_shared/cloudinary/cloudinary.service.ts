@@ -2,8 +2,16 @@ import * as Sentry from '@sentry/nextjs';
 import { v2 as cloudinary, type UploadApiResponse } from 'cloudinary';
 import createHttpError from 'http-errors';
 
-/** Only ids shaped like the ones this app uploads may ever be destroyed. */
-const OWN_PUBLIC_ID = /^pets\/[A-Za-z0-9_-]+\/photo-\d+$/;
+/** Folder holding everything this app stores; the Cloudinary account is shared. */
+export const CLOUDINARY_HOME = 'dps-vet';
+/**
+ * Only ids shaped like the ones this app uploads may ever be destroyed. The
+ * second shape exists only to clean up pre-`dps-vet` uploads at the account
+ * root and can be removed once those photos are re-uploaded.
+ */
+const OWN_PUBLIC_ID = new RegExp(
+	`^(?:${CLOUDINARY_HOME}/)?pets/[A-Za-z0-9_-]+/photo-\\d+$`
+);
 
 /** Fails fast with a controlled 500 naming only the variable, never its value. */
 function requireEnv(
@@ -80,6 +88,8 @@ export function uploadImage(buffer: Buffer, publicId: string): Promise<string> {
 				.upload_stream(
 					{
 						public_id: publicId,
+						// Dynamic folder mode lists assets by folder, not by public id path.
+						asset_folder: publicId.slice(0, publicId.lastIndexOf('/')),
 						resource_type: 'image',
 						timeout: TIMEOUT_MS,
 					},
@@ -113,7 +123,7 @@ export function destroyImage(publicId: string): Promise<void> {
 
 /**
  * Derives the public id of one of our own uploads from its delivery URL
- * (`https://res.cloudinary.com/{cloud}/image/upload/[v123/]pets/{id}/photo-{ts}.jpg`).
+ * (`https://res.cloudinary.com/{cloud}/image/upload/[v123/]dps-vet/pets/{id}/photo-{ts}.jpg`).
  * Returns `null` for anything else (other host, other cloud, other path), so a
  * crafted `photoUrl` can never make us delete an arbitrary asset.
  */

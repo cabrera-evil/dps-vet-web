@@ -1,4 +1,5 @@
 import {
+	CLOUDINARY_HOME,
 	destroyImage,
 	publicIdFromUrl,
 	uploadImage,
@@ -62,7 +63,10 @@ export class PetRepository extends FirestoreRepository<Pet> {
 	 * every replace) and returns its permanent HTTPS URL.
 	 */
 	uploadPhoto(petId: string, jpeg: Buffer): Promise<string> {
-		return uploadImage(jpeg, `pets/${petId}/photo-${Date.now()}`);
+		return uploadImage(
+			jpeg,
+			`${CLOUDINARY_HOME}/pets/${petId}/photo-${Date.now()}`
+		);
 	}
 
 	/** Deletes the image behind a URL from {@link uploadPhoto}; foreign URLs are ignored. */
