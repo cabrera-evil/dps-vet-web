@@ -21,6 +21,7 @@ The final delivery contains the following project information:
 - Web repository: <https://github.com/cabrera-evil/dps-vet-web>
 - Mobile repository: <https://github.com/cabrera-evil/dps-vet-app>
 - Deployed web application: <https://dps-vet-web.vercel.app>
+- Demo video: <https://drive.google.com/drive/folders/16IBAJwwuS-5N0Q3BbjFE40GRabgSA69e?usp=sharing>
 - License: [CC BY 4.0](LICENSE)
 
 The technical details below are documented from the source code in this
