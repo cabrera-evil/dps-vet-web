@@ -26,6 +26,11 @@ The final delivery contains the following project information:
 The technical details below are documented from the source code in this
 repository.
 
+## Mockups
+
+The interface is based on the project mockups in Figma:
+[DPS Veterinaria](https://www.figma.com/design/7ytJuwuUwrIMl5qGUc4ko1/DPS-Veterinaria?node-id=0-1&t=r2UnOM64Oi9PBQwc-1).
+
 ## Technology stack
 
 - **Runtime:** Node.js 24.12.0 and pnpm 10.14.0
@@ -33,10 +38,12 @@ repository.
 - **Language:** strict TypeScript 5.9
 - **Styling/UI:** Tailwind CSS 4, shadcn/Base UI primitives, Lucide icons,
   `class-variance-authority`, `clsx`, and `tailwind-merge`
-- **Authentication:** NextAuth 5 beta with JWT sessions and a credentials
-  provider backed by Firebase Authentication
-- **Database and storage:** Firebase Admin SDK, Firestore, Firebase Storage,
-  and Firebase Realtime Database configuration
+- **Authentication:** NextAuth 5 beta with JWT sessions, using email/password
+  and Google providers backed by Firebase Authentication
+- **Database and storage:** Firebase Admin SDK, Firestore, Cloudinary for pet
+  photos, Firebase Storage for medical-record attachments, and Firebase
+  Realtime Database configuration
+- **Charts:** Recharts for the dashboard appointments-per-day chart
 - **Data access:** Axios REST client, TanStack React Query, TanStack Table,
   and Socket.IO client support
 - **Forms and validation:** React Hook Form with Zod schemas and the Zod
@@ -75,6 +82,7 @@ groups are:
 | --- | --- | --- |
 | API/proxy | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_PROXY`, `NEXT_PUBLIC_HOST` | REST client base URL and optional proxy behavior |
 | Auth | `AUTH_SECRET`, `AUTH_DEBUG` | NextAuth JWT signing and development diagnostics |
+| Google sign-in | `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `GOOGLE_OAUTH_CLIENT_IDS` | Google OAuth client and allowed token audiences |
 | Firebase Admin | `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` | Server-side Admin SDK credentials |
 | Firebase services | `FIREBASE_STORAGE_BUCKET`, `FIREBASE_DATABASE_URL`, `FIREBASE_WEB_API_KEY` | Storage, Realtime Database, and server-side identity APIs |
 | Cloudinary | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Pet photo storage (server-only) |
@@ -154,9 +162,10 @@ under `components/ui/`. New feature UI should reuse those existing patterns.
 
 ### Authentication and authorization
 
-The browser signs in through NextAuth's credentials provider. The provider
-delegates identity verification to the Firebase login service. NextAuth stores a
-JWT session containing the Firebase `uid` and a flat `permissions` array.
+The browser signs in through NextAuth with email and password or with Google.
+Both delegate identity verification to the API's Firebase-backed login and
+Google services. NextAuth stores a JWT session containing the Firebase `uid`;
+permissions are read from Firestore.
 
 Authorization is permission-based; there is no role hierarchy in application
 code. A role is a named group of permissions stored in Firestore. The same
